@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Würfelnetze - Lernspiele</title>
+<style>
+:root {
+  --primary: #3498db;
+  --primary-light: #74b9ff;
+  --primary-dark: #2980b9;
+  --secondary: #e74c3c;
+  --success: #2ecc71;
+  --warning: #f39c12;
+  --bg: #f0f4ff;
+  --card: #ffffff;
+  --text: #2d2d2d;
+  --text-light: #888;
+  --error: #e74c3c;
+  --shadow: 0 2px 8px rgba(0,0,0,0.1);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.15);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); }
+#app { max-width: 480px; margin: 0 auto; height: 100%; position: relative; overflow: hidden; }
+.hidden { display: none !important; }
+.screen { position: absolute; inset: 0; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; transition: opacity 0.25s ease; }
+/* === TOAST === */
+#toast-container { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 1000; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.toast { background: var(--card); padding: 12px 20px; border-radius: var(--radius); box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; animation: toastIn 0.3s ease; white-space: nowrap; }
+.toast--fade { opacity: 0; transition: opacity 0.3s; }
+.toast-icon { font-size: 20px; }
+@keyframes toastIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+/* === LEVEL UP OVERLAY === */
+#level-up-overlay { position: fixed; inset: 0; z-index: 900; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; }
+.level-up-card { background: var(--card); border-radius: 20px; padding: 32px; text-align: center; animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1); max-width: 300px; }
+.level-up-icon { font-size: 48px; margin-bottom: 12px; }
+.level-up-title { font-size: 24px; font-weight: 800; color: var(--primary); }
+.level-up-sub { font-size: 16px; color: var(--text-light); margin-top: 4px; }
+.level-up-btn { margin-top: 20px; padding: 10px 32px; border: none; border-radius: var(--radius); background: var(--primary); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; }
+@keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+/* === WELCOME === */
+#screen-welcome { justify-content: center; align-items: center; text-align: center; gap: 20px; }
+.welcome-icon { font-size: 64px; animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+.welcome-title { font-size: 36px; font-weight: 800; color: var(--primary); }
+.welcome-sub { font-size: 16px; color: var(--text-light); }
+.welcome-input { width: 100%; max-width: 260px; padding: 14px 18px; border: 2px solid #ddd; border-radius: var(--radius); font-size: 18px; text-align: center; outline: none; transition: border-color 0.2s; font-family: var(--font); }
+.welcome-input:focus { border-color: var(--primary); }
+/* === BUTTONS === */
+.btn { padding: 14px 28px; border: none; border-radius: var(--radius); font-size: 16px; font-weight: 700; cursor: pointer; font-family: var(--font); transition: transform 0.15s, box-shadow 0.15s; }
+.btn:active { transform: scale(0.96); }
+.btn-primary { background: var(--primary); color: #fff; box-shadow: 0 4px 12px rgba(52,152,219,0.3); }
+.btn-primary:hover { box-shadow: 0 6px 16px rgba(52,152,219,0.4); }
+.btn-large { padding: 16px 36px; font-size: 18px; }
+.btn-back { background: none; border: none; font-size: 14px; color: var(--text-light); cursor: pointer; padding: 8px 0; font-weight: 600; }
+.btn-back:hover { color: var(--text); }
+/* === HOME === */
+#screen-home { gap: 16px; }
+.home-header { text-align: center; padding-top: 20px; }
+.home-header h1 { font-size: 28px; font-weight: 800; color: var(--primary); }
+.home-greeting { font-size: 16px; color: var(--text-light); margin-top: 4px; }
+.card { background: var(--card); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); }
+.level-card { text-align: center; margin-top: 8px; }
+.level-badge { display: inline-block; background: var(--primary); color: #fff; padding: 4px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; }
+.level-title { font-size: 18px; font-weight: 700; margin: 6px 0; }
+.xp-bar-container { position: relative; height: 20px; background: #e8e8e8; border-radius: 10px; overflow: hidden; margin-top: 8px; }
+.xp-bar-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-light)); border-radius: 10px; transition: width 0.5s ease; }
+.xp-bar-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--text); }
+.nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+.nav-btn { background: var(--card); border: 2px solid #e8e8e8; border-radius: var(--radius); padding: 16px 10px; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; font-family: var(--font); transition: border-color 0.2s, transform 0.15s; }
+.nav-btn:hover { border-color: var(--primary); }
+.nav-btn:active { transform: scale(0.97); }
+.nav-btn-icon { font-size: 28px; }
+.nav-btn-label { font-size: 13px; font-weight: 700; color: var(--text); text-align: center; }
+.nav-btn-sub { font-size: 11px; color: var(--text-light); text-align: center; }
+.nav-btn--wide { grid-column: 1 / -1; flex-direction: row; justify-content: center; padding: 12px; gap: 10px; }
+/* === MODE SELECT === */
+#screen-mode-select { justify-content: center; align-items: center; text-align: center; gap: 16px; }
+.mode-title { font-size: 22px; font-weight: 800; color: var(--primary); }
+.mode-desc { font-size: 14px; color: var(--text-light); max-width: 300px; }
+.diff-grid { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 280px; }
+.diff-btn { padding: 16px; border: 2px solid #e8e8e8; border-radius: var(--radius); background: var(--card); font-size: 16px; font-weight: 700; cursor: pointer; font-family: var(--font); transition: border-color 0.2s, transform 0.15s; display: flex; align-items: center; gap: 10px; }
+.diff-btn:active { transform: scale(0.97); }
+.diff-btn--easy { border-color: #d5f5e3; }
+.diff-btn--easy:hover { border-color: var(--success); background: #f0fdf4; }
+.diff-btn--medium { border-color: #fdebd0; }
+.diff-btn--medium:hover { border-color: var(--warning); background: #fffbf0; }
+.diff-btn--hard { border-color: #fadbd8; }
+.diff-btn--hard:hover { border-color: var(--error); background: #fff5f5; }
+.diff-icon { font-size: 22px; }
+.diff-label { display: flex; flex-direction: column; align-items: flex-start; }
+.diff-label span:first-child { font-size: 16px; }
+.diff-label span:last-child { font-size: 11px; color: var(--text-light); font-weight: 500; }
+/* === COUNTDOWN === */
+#screen-countdown { justify-content: center; align-items: center; }
+#countdown-num { font-size: 96px; font-weight: 800; color: var(--primary); }
+@keyframes countPop { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+/* === GAME === */
+#screen-game { gap: 12px; padding-top: 12px; }
+.game-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.game-progress { flex: 1; height: 8px; background: #e8e8e8; border-radius: 4px; overflow: hidden; position: relative; }
+.game-progress-fill { height: 100%; background: var(--primary); border-radius: 4px; transition: width 0.3s ease; }
+.game-progress-text { font-size: 12px; font-weight: 700; color: var(--text-light); white-space: nowrap; }
+.game-timer { font-size: 13px; font-weight: 700; color: var(--text-light); font-variant-numeric: tabular-nums; }
+.game-question { display: flex; flex-direction: column; align-items: center; gap: 12px; flex: 1; justify-content: center; min-height: 0; }
+.question-label { font-size: 17px; font-weight: 700; text-align: center; }
+.game-answers { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; padding-bottom: 16px; }
+.feedback { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 48px; font-weight: 800; pointer-events: none; z-index: 100; opacity: 0; }
+.feedback--correct { color: var(--success); opacity: 1; }
+.feedback--wrong { color: var(--error); opacity: 1; }
+@keyframes feedbackPop { 0% { transform: translate(-50%,-50%) scale(0.5); opacity: 0; } 30% { transform: translate(-50%,-50%) scale(1.2); opacity: 1; } 100% { transform: translate(-50%,-50%) scale(1) translateY(-30px); opacity: 0; } }
+/* Answer buttons */
+.answer-btn { padding: 14px 28px; border: 2px solid #e8e8e8; border-radius: var(--radius); background: var(--card); font-size: 18px; font-weight: 700; cursor: pointer; font-family: var(--font); transition: all 0.15s; min-width: 100px; text-align: center; }
+.answer-btn:hover { border-color: var(--primary); }
+.answer-btn:active { transform: scale(0.96); }
+.answer-btn--ja { border-color: #d5f5e3; color: #27ae60; }
+.answer-btn--ja:hover { background: #f0fdf4; border-color: var(--success); }
+.answer-btn--nein { border-color: #fadbd8; color: #c0392b; }
+.answer-btn--nein:hover { background: #fff5f5; border-color: var(--error); }
+.answer-btn--option { min-width: 60px; padding: 12px 16px; }
+/* Net grid */
+.net-grid { display: inline-grid; gap: 2px; }
+.net-cell { border: 2px solid #34495e; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; background: #ecf0f1; transition: all 0.2s; }
+.net-cell--highlight { box-shadow: 0 0 0 3px var(--error), 0 0 12px rgba(231,76,60,0.4); z-index: 1; animation: highlightPulse 1.2s ease-in-out infinite; }
+@keyframes highlightPulse { 0%,100% { box-shadow: 0 0 0 3px var(--error), 0 0 12px rgba(231,76,60,0.4); } 50% { box-shadow: 0 0 0 5px var(--error), 0 0 20px rgba(231,76,60,0.6); } }
+/* 3D Cube */
+.cube-scene { perspective: 400px; display: inline-block; }
+.cube { position: relative; transform-style: preserve-3d; transform: rotateX(-20deg) rotateY(35deg); }
+.cube-face { position: absolute; border: 1.5px solid rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; backface-visibility: hidden; background: #ecf0f1; }
+.cube-option { padding: 12px; border: 3px solid #e8e8e8; border-radius: var(--radius); cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; background: var(--card); }
+.cube-option:hover { border-color: var(--primary); transform: scale(1.05); }
+/* === RESULTS === */
+#screen-results { justify-content: center; align-items: center; text-align: center; gap: 16px; }
+.results-stars { font-size: 48px; letter-spacing: 4px; }
+.results-score { font-size: 32px; font-weight: 800; color: var(--primary); }
+.results-detail { font-size: 15px; color: var(--text-light); }
+.results-xp { font-size: 18px; font-weight: 700; color: var(--success); }
+.results-btns { display: flex; gap: 12px; margin-top: 8px; }
+/* === STATS === */
+#screen-stats { gap: 16px; }
+.stat-card { background: var(--card); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); }
+.stat-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+.stat-card p { font-size: 14px; color: var(--text-light); }
+.stats-empty { text-align: center; color: var(--text-light); padding: 40px 0; }
+/* === ACHIEVEMENTS === */
+#screen-achievements { gap: 16px; }
+.achievements-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.achievement { background: var(--card); border-radius: var(--radius-sm); padding: 12px 8px; text-align: center; box-shadow: var(--shadow); transition: transform 0.15s; }
+.achievement:hover { transform: translateY(-2px); }
+.achievement--locked { opacity: 0.45; filter: grayscale(1); }
+.achievement-icon { font-size: 28px; }
+.achievement-name { font-size: 11px; font-weight: 700; margin-top: 4px; }
+.achievement-desc { font-size: 10px; color: var(--text-light); margin-top: 2px; }
+/* === SETTINGS === */
+#screen-settings { gap: 16px; }
+.setting-row { display: flex; align-items: center; justify-content: space-between; background: var(--card); padding: 14px 16px; border-radius: var(--radius); box-shadow: var(--shadow); }
+.setting-label { font-size: 14px; font-weight: 600; }
+.setting-value { display: flex; align-items: center; gap: 8px; }
+.setting-btn { width: 32px; height: 32px; border: 2px solid #e8e8e8; border-radius: 8px; background: var(--card); font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.setting-num { font-size: 16px; font-weight: 700; min-width: 28px; text-align: center; }
+.btn-danger { background: var(--error); color: #fff; border: none; padding: 12px 24px; border-radius: var(--radius); font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 16px; }
+/* === SCREEN HEADER === */
+.screen-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.screen-header h2 { font-size: 20px; font-weight: 800; }
+/* === RESPONSIVE === */
+@media (min-width: 400px) { .cube-option { padding: 16px; } }
+</style>
+</head>
+<body>
+<div id="app">
+<div id="toast-container"></div>
+<div id="level-up-overlay" class="hidden">
+  <div class="level-up-card">
+    <div class="level-up-icon">🎲</div>
+    <div class="level-up-title" id="levelup-title"></div>
+    <div class="level-up-sub" id="levelup-sub"></div>
+    <button class="level-up-btn" id="levelup-btn">Weiter</button>
+  </div>
+</div>
+
+<div class="screen" id="screen-welcome">
+  <div class="welcome-icon">🎲</div>
+  <div class="welcome-title">Würfelnetze</div>
+  <div class="welcome-sub">Lerne die Netze des Würfels!</div>
+  <input type="text" class="welcome-input" id="name-input" placeholder="Dein Name" maxlength="20" autocomplete="off">
+  <button class="btn btn-primary btn-large" id="btn-start-welcome">Los geht's!</button>
+</div>
+
+<div class="screen hidden" id="screen-home">
+  <div class="home-header">
+    <h1>🎲 Würfelnetze</h1>
+    <div class="home-greeting" id="home-greeting"></div>
+  </div>
+  <div class="card level-card">
+    <div class="level-badge" id="home-level-badge"></div>
+    <div class="level-title" id="home-level-title"></div>
+    <div class="xp-bar-container">
+      <div class="xp-bar-fill" id="home-xp-fill"></div>
+      <div class="xp-bar-text" id="home-xp-text"></div>
+    </div>
+  </div>
+  <div class="nav-grid">
+    <button class="nav-btn" id="nav-netz">
+      <span class="nav-btn-icon">📋</span>
+      <span class="nav-btn-label">Netz oder nicht?</span>
+      <span class="nav-btn-sub">Ja / Nein</span>
+    </button>
+    <button class="nav-btn" id="nav-gegenueber">
+      <span class="nav-btn-icon">🔄</span>
+      <span class="nav-btn-label">Gegenüber</span>
+      <span class="nav-btn-sub">Seiten finden</span>
+    </button>
+    <button class="nav-btn" id="nav-falten">
+      <span class="nav-btn-icon">📦</span>
+      <span class="nav-btn-label">Würfel falten</span>
+      <span class="nav-btn-sub">3D zuordnen</span>
+    </button>
+    <button class="nav-btn" id="nav-stats">
+      <span class="nav-btn-icon">📊</span>
+      <span class="nav-btn-label">Statistiken</span>
+    </button>
+    <button class="nav-btn" id="nav-achievements">
+      <span class="nav-btn-icon">🏆</span>
+      <span class="nav-btn-label">Erfolge</span>
+    </button>
+    <button class="nav-btn" id="nav-settings">
+      <span class="nav-btn-icon">⚙️</span>
+      <span class="nav-btn-label">Einstellungen</span>
+    </button>
+  </div>
+</div>
+
+<div class="screen hidden" id="screen-mode-select">
+  <button class="btn-back" id="btn-back-mode">← Zurück</button>
+  <div class="mode-title" id="mode-select-title"></div>
+  <div class="mode-desc" id="mode-select-desc"></div>
+  <div class="diff-grid">
+    <button class="diff-btn diff-btn--easy" id="diff-easy">
+      <span class="diff-icon">🟢</span>
+      <span class="diff-label"><span>Leicht</span><span>Einfache Formen</span></span>
+    </button>
+    <button class="diff-btn diff-btn--medium" id="diff-medium">
+      <span class="diff-icon">🟡</span>
+      <span class="diff-label"><span>Mittel</span><span>Mehr Vielfalt</span></span>
+    </button>
+    <button class="diff-btn diff-btn--hard" id="diff-hard">
+      <span class="diff-icon">🔴</span>
+      <span class="diff-label"><span>Schwer</span><span>Gedreht & gespiegelt</span></span>
+    </button>
+  </div>
+</div>
+
+<div class="screen hidden" id="screen-countdown">
+  <div id="countdown-num"></div>
+</div>
+
+<div class="screen hidden" id="screen-game">
+  <div class="game-top">
+    <div class="game-progress">
+      <div class="game-progress-fill" id="game-progress-fill"></div>
+    </div>
+    <div class="game-progress-text" id="game-progress-text">0/10</div>
+    <div class="game-timer" id="game-timer">0:00</div>
+  </div>
+  <div class="game-question" id="game-question"></div>
+  <div class="game-answers" id="game-answers"></div>
+  <div class="feedback" id="game-feedback"></div>
+</div>
+
+<div class="screen hidden" id="screen-results">
+  <div class="results-stars" id="results-stars"></div>
+  <div class="results-score" id="results-score"></div>
+  <div class="results-detail" id="results-accuracy"></div>
+  <div class="results-xp" id="results-xp"></div>
+  <div class="results-btns">
+    <button class="btn btn-primary" id="btn-results-retry">Nochmal</button>
+    <button class="btn" id="btn-results-home" style="background:#e8e8e8;">Menü</button>
+  </div>
+</div>
+
+<div class="screen hidden" id="screen-stats">
+  <div class="screen-header">
+    <button class="btn-back" id="btn-back-stats">← Zurück</button>
+    <h2>Statistiken</h2>
+  </div>
+  <div id="stats-content"></div>
+</div>
+
+<div class="screen hidden" id="screen-achievements">
+  <div class="screen-header">
+    <button class="btn-back" id="btn-back-achievements">← Zurück</button>
+    <h2>Erfolge</h2>
+  </div>
+  <div class="achievements-grid" id="achievements-grid"></div>
+</div>
+
+<div class="screen hidden" id="screen-settings">
+  <div class="screen-header">
+    <button class="btn-back" id="btn-back-settings">← Zurück</button>
+    <h2>Einstellungen</h2>
+  </div>
+  <div class="setting-row">
+    <span class="setting-label">Fragen pro Runde</span>
+    <div class="setting-value">
+      <button class="setting-btn" id="setting-q-minus">−</button>
+      <span class="setting-num" id="setting-q-num">10</span>
+      <button class="setting-btn" id="setting-q-plus">+</button>
+    </div>
+  </div>
+  <div class="setting-row">
+    <span class="setting-label">Timer anzeigen</span>
+    <div class="setting-value">
+      <button class="setting-btn" id="setting-timer-toggle" style="width:auto;padding:0 12px;">Ja</button>
+    </div>
+  </div>
+  <button class="btn-danger" id="btn-reset">Alle Daten löschen</button>
+</div>
+
+</div>
+<script>
+// === CONSTANTS ===
+const OPPOSITE = {top:'bottom',bottom:'top',front:'back',back:'front',left:'right',right:'left'};
+const FACE_NAMES = ['top','bottom','front','back','left','right'];
+const FACE_COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#e67e22'];
+const FACE_SYMBOLS = ['\u2605','\u25CF','\u25B2','\u25C6','\u2660','\u2665'];
+
+const LEVELS = [
+  {xp:0,title:'Falt-Anf\u00e4nger'},{xp:50,title:'Netz-Entdecker'},{xp:120,title:'Form-Kenner'},
+  {xp:200,title:'W\u00fcrfel-Falter'},{xp:300,title:'Seiten-Finder'},{xp:420,title:'Raum-Denker'},
+  {xp:560,title:'Geo-Profi'},{xp:720,title:'Falt-Experte'},{xp:900,title:'Netz-Virtuose'},
+  {xp:1100,title:'W\u00fcrfel-Meister'}
+];
+
+const ACHIEVEMENT_DEFS = [
+  {id:'erste-faltung',name:'Erste Faltung',desc:'Erste Runde gespielt',icon:'\uD83C\uDFB2'},
+  {id:'perfekt',name:'Perfektionist',desc:'100% in einer Runde',icon:'\uD83D\uDC8E'},
+  {id:'blitz',name:'Blitzantwort',desc:'Unter 2s geantwortet',icon:'\u26A1'},
+  {id:'serie-5',name:'5er-Serie',desc:'5 richtige in Folge',icon:'\uD83D\uDD25'},
+  {id:'serie-10',name:'10er-Serie',desc:'10 richtige in Folge',icon:'\uD83D\uDCAB'},
+  {id:'runden-10',name:'\u00dcbungsheld',desc:'10 Runden gespielt',icon:'\uD83C\uDFC3'},
+  {id:'runden-25',name:'Ausdauer-Star',desc:'25 Runden gespielt',icon:'\uD83C\uDF1F'},
+  {id:'netz-meister',name:'Netz-Meister',desc:'90%+ bei Netz oder nicht',icon:'\uD83C\uDFAF'},
+  {id:'seiten-meister',name:'Seiten-Meister',desc:'90%+ bei Gegen\u00fcber',icon:'\uD83E\uDDCA'},
+  {id:'falt-meister',name:'Falt-Meister',desc:'90%+ bei W\u00fcrfel falten',icon:'\uD83D\uDCE6'},
+  {id:'alle-modi',name:'Allrounder',desc:'Alle 3 Modi gespielt',icon:'\uD83C\uDFC6'},
+  {id:'level-5',name:'Aufsteiger',desc:'Level 5 erreicht',icon:'\uD83D\uDCC8'},
+  {id:'punkte-1000',name:'Punkte-Sammler',desc:'1000 Punkte gesammelt',icon:'\uD83D\uDCB0'},
+  {id:'tempo',name:'Tempomacher',desc:'Schnitt unter 3 Sekunden',icon:'\uD83D\uDE80'}
+];
+
+// === NET DATA ===
+// 11 valid cube nets: cells as [row,col], faces = fold map (cell index -> cube face)
+// Fold maps computed via BFS: base cell gets 'bottom', neighbors assigned by folding direction
+const NetData = {
+  VALID: [
+    {cells:[[0,1],[1,0],[1,1],[1,2],[1,3],[2,1]],faces:['back','left','bottom','right','top','front']},
+    {cells:[[0,0],[1,0],[1,1],[1,2],[1,3],[2,0]],faces:['back','left','bottom','right','top','front']},
+    {cells:[[0,0],[1,0],[1,1],[1,2],[1,3],[2,1]],faces:['back','left','bottom','right','top','front']},
+    {cells:[[0,0],[1,0],[1,1],[1,2],[1,3],[2,2]],faces:['back','left','bottom','right','top','front']},
+    {cells:[[0,0],[1,0],[1,1],[1,2],[1,3],[2,3]],faces:['back','left','bottom','right','top','front']},
+    {cells:[[0,1],[1,0],[1,1],[1,2],[1,3],[2,2]],faces:['back','left','bottom','right','top','front']},
+    {cells:[[0,2],[1,0],[1,1],[1,2],[1,3],[2,1]],faces:['back','left','bottom','right','top','front']},
+    {cells:[[0,0],[0,1],[1,1],[1,2],[1,3],[2,2]],faces:['left','back','bottom','right','top','front']},
+    {cells:[[0,0],[0,1],[1,1],[1,2],[1,3],[2,3]],faces:['left','back','bottom','right','top','front']},
+    {cells:[[0,1],[1,0],[1,1],[2,1],[2,2],[3,2]],faces:['back','left','bottom','front','right','top']},
+    {cells:[[0,2],[1,1],[1,2],[2,0],[2,1],[3,0]],faces:['back','bottom','right','left','front','top']}
+  ],
+  // 15 invalid hexominoes (connected 6-cell shapes that do NOT fold into cubes)
+  INVALID: [
+    {cells:[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5]]},
+    {cells:[[0,0],[0,1],[0,2],[1,0],[1,1],[1,2]]},
+    {cells:[[0,0],[1,0],[2,0],[2,1],[2,2],[1,2]]},
+    {cells:[[0,0],[0,1],[0,2],[0,3],[1,1],[2,1]]},
+    {cells:[[0,0],[0,1],[1,0],[1,1],[2,0],[3,0]]},
+    {cells:[[0,0],[1,0],[2,0],[3,0],[4,0],[4,1]]},
+    {cells:[[0,0],[0,1],[0,2],[1,0],[2,0],[2,1]]},
+    {cells:[[0,0],[0,2],[1,0],[1,1],[1,2],[2,1]]},
+    {cells:[[0,1],[1,0],[1,1],[1,2],[1,3],[1,4]]},
+    {cells:[[0,0],[0,1],[1,1],[2,0],[2,1],[3,0]]},
+    {cells:[[0,0],[0,1],[1,1],[2,1],[3,0],[3,1]]},
+    {cells:[[0,0],[0,1],[0,2],[0,3],[1,0],[1,1]]},
+    {cells:[[0,0],[0,1],[1,0],[1,1],[2,1],[2,2]]},
+    {cells:[[0,0],[0,1],[1,1],[1,2],[2,1],[2,2]]},
+    {cells:[[0,0],[0,2],[1,0],[1,1],[1,2],[2,0]]}
+  ],
+  getOppositeCell(netIdx, cellIdx) {
+    const net = this.VALID[netIdx];
+    const face = net.faces[cellIdx];
+    const oppFace = OPPOSITE[face];
+    return net.faces.indexOf(oppFace);
+  }
+};
+
+// === STORAGE ===
+const Storage = {
+  KEY: 'wuerfelnetze',
+  _default() {
+    return { version:1, player:null, sessions:[], achievements:{}, settings:{questionsPerRound:10, showTimer:true} };
+  },
+  load() {
+    try {
+      const raw = localStorage.getItem(this.KEY);
+      if (!raw) return this._default();
+      const d = JSON.parse(raw);
+      if (!d.settings) d.settings = this._default().settings;
+      if (!d.achievements) d.achievements = {};
+      if (!d.sessions) d.sessions = [];
+      return d;
+    } catch { return this._default(); }
+  },
+  save(d) {
+    try {
+      if (d.sessions.length > 100) d.sessions = d.sessions.slice(-100);
+      localStorage.setItem(this.KEY, JSON.stringify(d));
+    } catch {}
+  },
+  reset() { localStorage.removeItem(this.KEY); }
+};
+
+let data = Storage.load();
+
+// === SCORING ===
+const Scoring = {
+  calc(correct, timeMs, streak) {
+    if (!correct) return 0;
+    let base = 10;
+    const s = timeMs / 1000;
+    if (s < 3) base += 10; else if (s < 5) base += 5;
+    let mult = 1;
+    if (streak >= 10) mult = 3; else if (streak >= 5) mult = 2; else if (streak >= 3) mult = 1.5;
+    return Math.round(base * mult);
+  },
+  stars(accuracy, avgTime) {
+    if (accuracy >= 0.9 && avgTime < 8) return 3;
+    if (accuracy >= 0.75) return 2;
+    if (accuracy >= 0.5) return 1;
+    return 0;
+  },
+  getLevel(xp) {
+    for (let i = LEVELS.length - 1; i >= 0; i--) if (xp >= LEVELS[i].xp) return i;
+    return 0;
+  }
+};
+
+// === ACHIEVEMENTS ===
+const Achievements = {
+  checkAll(result) {
+    const unlocked = [];
+    for (const def of ACHIEVEMENT_DEFS) {
+      if (data.achievements[def.id]) continue;
+      let ok = false;
+      switch (def.id) {
+        case 'erste-faltung': ok = data.sessions.length >= 1; break;
+        case 'perfekt': ok = result.accuracy >= 1; break;
+        case 'blitz': ok = result.results.some(r => r.correct && r.timeMs < 2000); break;
+        case 'serie-5': ok = result.maxStreak >= 5; break;
+        case 'serie-10': ok = result.maxStreak >= 10; break;
+        case 'runden-10': ok = data.sessions.length >= 10; break;
+        case 'runden-25': ok = data.sessions.length >= 25; break;
+        case 'netz-meister': ok = result.mode === 'netz' && result.accuracy >= 0.9; break;
+        case 'seiten-meister': ok = result.mode === 'gegenueber' && result.accuracy >= 0.9; break;
+        case 'falt-meister': ok = result.mode === 'falten' && result.accuracy >= 0.9; break;
+        case 'alle-modi': ok = new Set(data.sessions.map(s => s.mode)).size >= 3; break;
+        case 'level-5': ok = Scoring.getLevel(data.player.xp) >= 4; break;
+        case 'punkte-1000': ok = data.player.totalPoints >= 1000; break;
+        case 'tempo': ok = result.avgTime < 3; break;
+      }
+      if (ok) { data.achievements[def.id] = Date.now(); unlocked.push(def); }
+    }
+    return unlocked;
+  }
+};
+
+// === NET RENDERER ===
+const NetRenderer = {
+  render2D(container, cells, options) {
+    options = options || {};
+    const size = options.cellSize || 50;
+    const maxR = Math.max(...cells.map(c => c[0]));
+    const maxC = Math.max(...cells.map(c => c[1]));
+    const grid = document.createElement('div');
+    grid.className = 'net-grid';
+    grid.style.gridTemplateRows = 'repeat(' + (maxR+1) + ',' + size + 'px)';
+    grid.style.gridTemplateColumns = 'repeat(' + (maxC+1) + ',' + size + 'px)';
+    cells.forEach(function(cell, i) {
+      const el = document.createElement('div');
+      el.className = 'net-cell';
+      el.style.gridRow = cell[0] + 1;
+      el.style.gridColumn = cell[1] + 1;
+      el.style.width = size + 'px';
+      el.style.height = size + 'px';
+      if (options.faceContents && options.faceContents[i]) {
+        const fc = options.faceContents[i];
+        if (fc.color && fc.color !== '#fff') el.style.background = fc.color;
+        if (fc.label) el.textContent = fc.label;
+      }
+      if (options.highlightCell === i) el.classList.add('net-cell--highlight');
+      if (options.onClick) el.addEventListener('click', function() { options.onClick(i); });
+      grid.appendChild(el);
+    });
+    const wrapper = document.createElement('div');
+    wrapper.style.display = 'flex';
+    wrapper.style.justifyContent = 'center';
+    wrapper.appendChild(grid);
+    container.appendChild(wrapper);
+  },
+  render3D(container, faceContents, cubeSize) {
+    cubeSize = cubeSize || 70;
+    const half = cubeSize / 2;
+    const scene = document.createElement('div');
+    scene.className = 'cube-scene';
+    scene.style.width = scene.style.height = cubeSize + 'px';
+    const cube = document.createElement('div');
+    cube.className = 'cube';
+    cube.style.width = cube.style.height = cubeSize + 'px';
+    const transforms = {
+      front:'rotateY(0deg) translateZ('+half+'px)',
+      back:'rotateY(180deg) translateZ('+half+'px)',
+      left:'rotateY(-90deg) translateZ('+half+'px)',
+      right:'rotateY(90deg) translateZ('+half+'px)',
+      top:'rotateX(90deg) translateZ('+half+'px)',
+      bottom:'rotateX(-90deg) translateZ('+half+'px)'
+    };
+    for (const face of FACE_NAMES) {
+      const el = document.createElement('div');
+      el.className = 'cube-face';
+      el.style.width = el.style.height = cubeSize + 'px';
+      el.style.transform = transforms[face];
+      const fc = faceContents[face];
+      if (fc) {
+        if (fc.color && fc.color !== '#fff') el.style.background = fc.color;
+        else el.style.background = '#ecf0f1';
+        if (fc.label) el.textContent = fc.label;
+      }
+      cube.appendChild(el);
+    }
+    scene.appendChild(cube);
+    container.appendChild(scene);
+  }
+};
+
+// === QUESTION GENERATOR ===
+const QuestionGenerator = {
+  _shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  },
+  _pickN(max, n) {
+    const arr = Array.from({length:max}, function(_,i){return i;});
+    QuestionGenerator._shuffle(arr);
+    return arr.slice(0, Math.min(n, max));
+  },
+  _rotate(cells, times) {
+    let c = cells.map(function(p){return [p[0],p[1]];});
+    for (let t = 0; t < times; t++) {
+      const maxR = Math.max(...c.map(function(p){return p[0];}));
+      c = c.map(function(p){return [p[1], maxR - p[0]];});
+    }
+    const minR = Math.min(...c.map(function(p){return p[0];}));
+    const minC = Math.min(...c.map(function(p){return p[1];}));
+    return c.map(function(p){return [p[0]-minR, p[1]-minC];});
+  },
+  _reflect(cells) {
+    const maxC = Math.max(...cells.map(function(p){return p[1];}));
+    const r = cells.map(function(p){return [p[0], maxC - p[1]];});
+    const minC = Math.min(...r.map(function(p){return p[1];}));
+    return r.map(function(p){return [p[0], p[1]-minC];});
+  },
+  _transform(cells, difficulty) {
+    if (difficulty === 'easy') return cells.map(function(p){return [p[0],p[1]];});
+    const rot = Math.floor(Math.random() * 4);
+    let c = this._rotate(cells, rot);
+    if (difficulty === 'hard' && Math.random() < 0.5) c = this._reflect(c);
+    return c;
+  },
+  _faceContents(difficulty) {
+    if (difficulty === 'easy') {
+      const colors = this._shuffle([...FACE_COLORS]);
+      return colors.map(function(c){return {color:c, label:''};});
+    } else if (difficulty === 'medium') {
+      const nums = this._shuffle([1,2,3,4,5,6]);
+      return nums.map(function(n){return {color:'#fff', label:String(n)};});
+    } else {
+      const syms = this._shuffle([...FACE_SYMBOLS]);
+      return syms.map(function(s){return {color:'#fff', label:s};});
+    }
+  },
+  netzOderNicht(difficulty, count) {
+    const qs = [];
+    const nV = Math.ceil(count / 2);
+    const nI = count - nV;
+    const vi = this._pickN(NetData.VALID.length, nV);
+    for (const i of vi) {
+      qs.push({cells: this._transform(NetData.VALID[i].cells, difficulty), isValid: true});
+    }
+    const ii = this._pickN(NetData.INVALID.length, nI);
+    for (const i of ii) {
+      qs.push({cells: this._transform(NetData.INVALID[i].cells, difficulty), isValid: false});
+    }
+    return this._shuffle(qs);
+  },
+  gegenueberSeiten(difficulty, count) {
+    const qs = [];
+    for (let q = 0; q < count; q++) {
+      const netIdx = Math.floor(Math.random() * NetData.VALID.length);
+      const net = NetData.VALID[netIdx];
+      const highlight = Math.floor(Math.random() * 6);
+      const opposite = NetData.getOppositeCell(netIdx, highlight);
+      const fc = this._faceContents(difficulty);
+      const numOpts = difficulty === 'easy' ? 3 : 5;
+      const others = [0,1,2,3,4,5].filter(function(i){return i !== highlight && i !== opposite;});
+      this._shuffle(others);
+      const distractors = others.slice(0, numOpts - 1);
+      const options = this._shuffle([opposite].concat(distractors));
+      qs.push({netIdx:netIdx, cells:net.cells, highlightCell:highlight, oppositeCell:opposite, faceContents:fc, options:options});
+    }
+    return qs;
+  },
+  wuerfelFalten(difficulty, count) {
+    const qs = [];
+    for (let q = 0; q < count; q++) {
+      const netIdx = Math.floor(Math.random() * NetData.VALID.length);
+      const net = NetData.VALID[netIdx];
+      const fc = this._faceContents(difficulty);
+      const correctCube = {};
+      net.faces.forEach(function(face, i) { correctCube[face] = fc[i]; });
+      const numOpts = difficulty === 'easy' ? 3 : 4;
+      const cubes = [correctCube];
+      for (let w = 0; w < numOpts - 1; w++) {
+        cubes.push(this._makeWrongCube(correctCube));
+      }
+      // Shuffle and track correct index
+      const indices = cubes.map(function(_,i){return i;});
+      QuestionGenerator._shuffle(indices);
+      const shuffled = indices.map(function(i){return cubes[i];});
+      const correctIdx = indices.indexOf(0);
+      qs.push({netIdx:netIdx, cells:net.cells, faceContents:fc, cubeOptions:shuffled, correctIdx:correctIdx});
+    }
+    return qs;
+  },
+  _makeWrongCube(correct) {
+    const wrong = {};
+    for (const f of FACE_NAMES) wrong[f] = correct[f];
+    // Swap 2 adjacent faces
+    const pairs = [['front','right'],['front','top'],['front','left'],['front','bottom'],
+      ['back','right'],['back','top'],['back','left'],['back','bottom'],
+      ['top','right'],['top','left'],['bottom','right'],['bottom','left']];
+    const p = pairs[Math.floor(Math.random() * pairs.length)];
+    const tmp = wrong[p[0]]; wrong[p[0]] = wrong[p[1]]; wrong[p[1]] = tmp;
+    return wrong;
+  }
+};
+
+// === GAME ENGINE ===
+const GameEngine = {
+  mode: null, difficulty: null, pendingMode: null,
+  queue: [], current: null, results: [],
+  streak: 0, maxStreak: 0, totalPoints: 0,
+  questionStart: 0, timerInterval: null, timerStart: 0,
+  locked: false, sessionResult: null, originalCount: 0,
+  start(mode, difficulty) {
+    this.mode = mode;
+    this.difficulty = difficulty;
+    this.results = [];
+    this.streak = 0;
+    this.maxStreak = 0;
+    this.totalPoints = 0;
+    this.locked = false;
+    this.sessionResult = null;
+    const count = data.settings.questionsPerRound || 10;
+    switch (mode) {
+      case 'netz': this.queue = QuestionGenerator.netzOderNicht(difficulty, count); break;
+      case 'gegenueber': this.queue = QuestionGenerator.gegenueberSeiten(difficulty, count); break;
+      case 'falten': this.queue = QuestionGenerator.wuerfelFalten(difficulty, count); break;
+    }
+    this.originalCount = this.queue.length;
+    this._runCountdown();
+  },
+  _runCountdown() {
+    UI.show('countdown');
+    const nums = ['3','2','1','LOS!'];
+    let i = 0;
+    const el = UI.$('countdown-num');
+    const self = this;
+    const tick = function() {
+      el.textContent = nums[i];
+      el.style.animation = 'none';
+      el.offsetHeight;
+      el.style.animation = 'countPop 0.6s ease';
+      i++;
+      if (i < nums.length) setTimeout(tick, 700);
+      else setTimeout(function() { UI.show('game'); self._startTimer(); self._nextQuestion(); }, 500);
+    };
+    tick();
+  },
+  _startTimer() {
+    this.timerStart = Date.now();
+    const self = this;
+    if (data.settings.showTimer) {
+      UI.$('game-timer').textContent = '0:00';
+      this.timerInterval = setInterval(function() {
+        const s = Math.floor((Date.now() - self.timerStart) / 1000);
+        UI.$('game-timer').textContent = Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+      }, 1000);
+    } else {
+      UI.$('game-timer').textContent = '';
+    }
+  },
+  _nextQuestion() {
+    if (this.queue.length === 0) return this._endSession();
+    this.current = this.queue.shift();
+    this.questionStart = Date.now();
+    this.locked = false;
+    this._renderQuestion();
+    const done = this.originalCount - this.queue.length - 1;
+    UI.$('game-progress-fill').style.width = (done / this.originalCount * 100) + '%';
+    UI.$('game-progress-text').textContent = (done+1) + ' / ' + this.originalCount;
+  },
+  _renderQuestion() {
+    const area = UI.$('game-question');
+    const answers = UI.$('game-answers');
+    area.innerHTML = '';
+    answers.innerHTML = '';
+    const self = this;
+    if (this.mode === 'netz') {
+      const lbl = document.createElement('div');
+      lbl.className = 'question-label';
+      lbl.textContent = 'Ist das ein W\u00fcrfelnetz?';
+      area.appendChild(lbl);
+      NetRenderer.render2D(area, this.current.cells, {cellSize:48});
+      var btnJ = document.createElement('button');
+      btnJ.className = 'answer-btn answer-btn--ja';
+      btnJ.textContent = '\u2713 Ja';
+      btnJ.onclick = function(){self.answer(true);};
+      var btnN = document.createElement('button');
+      btnN.className = 'answer-btn answer-btn--nein';
+      btnN.textContent = '\u2717 Nein';
+      btnN.onclick = function(){self.answer(false);};
+      answers.appendChild(btnJ);
+      answers.appendChild(btnN);
+    } else if (this.mode === 'gegenueber') {
+      const q = this.current;
+      const lbl = document.createElement('div');
+      lbl.className = 'question-label';
+      lbl.textContent = 'Welche Seite liegt gegen\u00fcber der markierten?';
+      area.appendChild(lbl);
+      NetRenderer.render2D(area, q.cells, {cellSize:48, faceContents:q.faceContents, highlightCell:q.highlightCell});
+      for (const optIdx of q.options) {
+        const btn = document.createElement('button');
+        btn.className = 'answer-btn answer-btn--option';
+        const fc = q.faceContents[optIdx];
+        if (fc.color && fc.color !== '#fff') {
+          btn.style.background = fc.color;
+          btn.style.color = '#fff';
+        }
+        btn.textContent = fc.label || '\u25A0';
+        btn.onclick = (function(idx){return function(){self.answer(idx);};})(optIdx);
+        answers.appendChild(btn);
+      }
+    } else if (this.mode === 'falten') {
+      const q = this.current;
+      const lbl = document.createElement('div');
+      lbl.className = 'question-label';
+      lbl.textContent = 'Welcher W\u00fcrfel entsteht?';
+      area.appendChild(lbl);
+      NetRenderer.render2D(area, q.cells, {cellSize:38, faceContents:q.faceContents});
+      answers.style.gap = '12px';
+      q.cubeOptions.forEach(function(cube, i) {
+        const opt = document.createElement('div');
+        opt.className = 'cube-option';
+        opt.onclick = (function(idx){return function(){self.answer(idx);};})(i);
+        NetRenderer.render3D(opt, cube, 65);
+        answers.appendChild(opt);
+      });
+    }
+  },
+  answer(value) {
+    if (this.locked) return;
+    this.locked = true;
+    const timeMs = Date.now() - this.questionStart;
+    let correct = false;
+    if (this.mode === 'netz') correct = value === this.current.isValid;
+    else if (this.mode === 'gegenueber') correct = value === this.current.oppositeCell;
+    else if (this.mode === 'falten') correct = value === this.current.correctIdx;
+    if (correct) {
+      this.streak++;
+      if (this.streak > this.maxStreak) this.maxStreak = this.streak;
+      const pts = Scoring.calc(true, timeMs, this.streak);
+      this.totalPoints += pts;
+      this._showFeedback(true, pts);
+    } else {
+      this.streak = 0;
+      this._showFeedback(false, 0);
+    }
+    this.results.push({correct:correct, timeMs:timeMs});
+    const self = this;
+    setTimeout(function(){self._nextQuestion();}, correct ? 800 : 1500);
+  },
+  _showFeedback(correct, pts) {
+    const fb = UI.$('game-feedback');
+    fb.className = 'feedback ' + (correct ? 'feedback--correct' : 'feedback--wrong');
+    fb.textContent = correct ? '+' + pts : '\u2717';
+    fb.style.animation = 'none';
+    fb.offsetHeight;
+    fb.style.animation = 'feedbackPop 0.6s ease';
+    setTimeout(function(){fb.className = 'feedback';}, correct ? 700 : 1400);
+  },
+  _endSession() {
+    clearInterval(this.timerInterval);
+    const correctCount = this.results.filter(function(r){return r.correct;}).length;
+    const accuracy = this.results.length > 0 ? correctCount / this.results.length : 0;
+    const avgTime = this.results.reduce(function(a,r){return a+r.timeMs;},0) / this.results.length / 1000;
+    const stars = Scoring.stars(accuracy, avgTime);
+    const earnedXp = Math.round(this.totalPoints / 10);
+    const oldLevel = Scoring.getLevel(data.player.xp);
+    data.player.xp += earnedXp;
+    data.player.totalPoints += this.totalPoints;
+    const newLevel = Scoring.getLevel(data.player.xp);
+    data.sessions.push({mode:this.mode, difficulty:this.difficulty, accuracy:accuracy, totalPoints:this.totalPoints, stars:stars, date:Date.now()});
+    this.sessionResult = {mode:this.mode, accuracy:accuracy, totalPoints:this.totalPoints, stars:stars, earnedXp:earnedXp, maxStreak:this.maxStreak, avgTime:avgTime, results:this.results};
+    const unlocked = Achievements.checkAll(this.sessionResult);
+    Storage.save(data);
+    UI.show('results');
+    for (const a of unlocked) {
+      setTimeout(function(){UI.toast(a.icon + ' ' + a.name + ' freigeschaltet!');}, 500);
+    }
+    if (newLevel > oldLevel) {
+      setTimeout(function() {
+        UI.$('levelup-title').textContent = 'Level ' + (newLevel+1) + '!';
+        UI.$('levelup-sub').textContent = LEVELS[newLevel].title;
+        UI.$('level-up-overlay').classList.remove('hidden');
+      }, 1000);
+    }
+  }
+};
+
+// === UI ===
+const UI = {
+  $(id) { return document.getElementById(id); },
+  screens: ['welcome','home','mode-select','countdown','game','results','stats','achievements','settings'],
+  show(name) {
+    for (const s of this.screens) {
+      document.getElementById('screen-' + s).classList.toggle('hidden', s !== name);
+    }
+    if (this['render_' + name.replace('-','_')]) this['render_' + name.replace('-','_')]();
+  },
+  toast(msg, icon) {
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.innerHTML = '<span class="toast-icon">' + (icon||'\u2728') + '</span><span>' + msg + '</span>';
+    this.$('toast-container').appendChild(el);
+    setTimeout(function(){el.classList.add('toast--fade'); setTimeout(function(){el.remove();}, 300);}, 2500);
+  },
+  render_home() {
+    const p = data.player;
+    this.$('home-greeting').textContent = 'Hallo, ' + p.name + '!';
+    const lvl = Scoring.getLevel(p.xp);
+    this.$('home-level-badge').textContent = 'Level ' + (lvl+1);
+    this.$('home-level-title').textContent = LEVELS[lvl].title;
+    const nextXp = lvl < LEVELS.length - 1 ? LEVELS[lvl+1].xp : LEVELS[lvl].xp;
+    const prevXp = LEVELS[lvl].xp;
+    const pct = lvl < LEVELS.length - 1 ? ((p.xp - prevXp) / (nextXp - prevXp)) * 100 : 100;
+    this.$('home-xp-fill').style.width = pct + '%';
+    this.$('home-xp-text').textContent = p.xp + ' / ' + nextXp + ' XP';
+  },
+  render_mode_select() {
+    const titles = {netz:'Netz oder nicht?', gegenueber:'Gegen\u00fcberliegende Seiten', falten:'W\u00fcrfel falten'};
+    const descs = {
+      netz:'Erkenne, ob eine Form ein g\u00fcltiges W\u00fcrfelnetz ist.',
+      gegenueber:'Finde die gegen\u00fcberliegende Seite im W\u00fcrfelnetz.',
+      falten:'W\u00e4hle den richtigen W\u00fcrfel, der aus dem Netz entsteht.'
+    };
+    const mode = GameEngine.pendingMode;
+    this.$('mode-select-title').textContent = titles[mode] || mode;
+    this.$('mode-select-desc').textContent = descs[mode] || '';
+  },
+  render_results() {
+    const r = GameEngine.sessionResult;
+    if (!r) return;
+    this.$('results-stars').textContent = [0,1,2].map(function(i){return i < r.stars ? '\u2B50' : '\u2606';}).join('');
+    this.$('results-score').textContent = r.totalPoints + ' Punkte';
+    this.$('results-accuracy').textContent = Math.round(r.accuracy * 100) + '% richtig';
+    this.$('results-xp').textContent = '+' + r.earnedXp + ' XP';
+  },
+  render_stats() {
+    const container = this.$('stats-content');
+    const sessions = data.sessions;
+    if (sessions.length === 0) {
+      container.innerHTML = '<p class="stats-empty">Noch keine Statistiken. Spiel eine Runde!</p>';
+      return;
+    }
+    const byMode = {};
+    for (const s of sessions) {
+      if (!byMode[s.mode]) byMode[s.mode] = [];
+      byMode[s.mode].push(s);
+    }
+    const modeNames = {netz:'Netz oder nicht?', gegenueber:'Gegen\u00fcberliegende Seiten', falten:'W\u00fcrfel falten'};
+    let html = '<div class="stat-card"><h3>\u00dcbersicht</h3><p>' + sessions.length + ' Runden gespielt \u00b7 ' + data.player.totalPoints + ' Punkte</p></div>';
+    for (const mode of Object.keys(byMode)) {
+      const sess = byMode[mode];
+      const avgAcc = sess.reduce(function(a,s){return a+s.accuracy;}, 0) / sess.length;
+      const bestStars = Math.max(...sess.map(function(s){return s.stars;}));
+      html += '<div class="stat-card"><h3>' + (modeNames[mode]||mode) + '</h3>';
+      html += '<p>' + sess.length + ' Runden \u00b7 ' + Math.round(avgAcc*100) + '% Schnitt \u00b7 ' + bestStars + '\u2B50 Bestleistung</p></div>';
+    }
+    container.innerHTML = html;
+  },
+  render_achievements() {
+    const container = this.$('achievements-grid');
+    let html = '';
+    for (const def of ACHIEVEMENT_DEFS) {
+      const unlocked = data.achievements[def.id];
+      html += '<div class="achievement ' + (unlocked ? '' : 'achievement--locked') + '">';
+      html += '<div class="achievement-icon">' + def.icon + '</div>';
+      html += '<div class="achievement-name">' + def.name + '</div>';
+      html += '<div class="achievement-desc">' + def.desc + '</div></div>';
+    }
+    container.innerHTML = html;
+  },
+  render_settings() {
+    this.$('setting-q-num').textContent = data.settings.questionsPerRound;
+    this.$('setting-timer-toggle').textContent = data.settings.showTimer ? 'Ja' : 'Nein';
+  }
+};
+
+// === INPUT ===
+const Input = {
+  init() {
+    document.addEventListener('keydown', function(e) {
+      if (GameEngine.locked) return;
+      if (GameEngine.mode === 'netz' && document.getElementById('screen-game') && !document.getElementById('screen-game').classList.contains('hidden')) {
+        if (e.key === 'j' || e.key === 'J' || e.key === '1') GameEngine.answer(true);
+        if (e.key === 'n' || e.key === 'N' || e.key === '2') GameEngine.answer(false);
+      }
+    });
+  }
+};
+
+// === APP ===
+const App = {
+  init() {
+    data = Storage.load();
+    Input.init();
+    this._bindEvents();
+    if (data.player) UI.show('home');
+    else UI.show('welcome');
+  },
+  _bindEvents() {
+    // Welcome
+    UI.$('btn-start-welcome').onclick = function() {
+      const name = UI.$('name-input').value.trim();
+      if (!name) return;
+      data.player = {name:name, xp:0, totalPoints:0};
+      Storage.save(data);
+      UI.show('home');
+    };
+    UI.$('name-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') UI.$('btn-start-welcome').click();
+    });
+    // Home nav
+    UI.$('nav-netz').onclick = function(){GameEngine.pendingMode='netz'; UI.show('mode-select');};
+    UI.$('nav-gegenueber').onclick = function(){GameEngine.pendingMode='gegenueber'; UI.show('mode-select');};
+    UI.$('nav-falten').onclick = function(){GameEngine.pendingMode='falten'; UI.show('mode-select');};
+    UI.$('nav-stats').onclick = function(){UI.show('stats');};
+    UI.$('nav-achievements').onclick = function(){UI.show('achievements');};
+    UI.$('nav-settings').onclick = function(){UI.show('settings');};
+    // Mode select
+    UI.$('diff-easy').onclick = function(){GameEngine.start(GameEngine.pendingMode,'easy');};
+    UI.$('diff-medium').onclick = function(){GameEngine.start(GameEngine.pendingMode,'medium');};
+    UI.$('diff-hard').onclick = function(){GameEngine.start(GameEngine.pendingMode,'hard');};
+    UI.$('btn-back-mode').onclick = function(){UI.show('home');};
+    // Results
+    UI.$('btn-results-retry').onclick = function(){GameEngine.start(GameEngine.mode, GameEngine.difficulty);};
+    UI.$('btn-results-home').onclick = function(){UI.show('home');};
+    // Back buttons
+    UI.$('btn-back-stats').onclick = function(){UI.show('home');};
+    UI.$('btn-back-achievements').onclick = function(){UI.show('home');};
+    UI.$('btn-back-settings').onclick = function(){UI.show('home');};
+    // Settings
+    UI.$('setting-q-minus').onclick = function() {
+      if (data.settings.questionsPerRound > 5) { data.settings.questionsPerRound -= 5; Storage.save(data); UI.render_settings(); }
+    };
+    UI.$('setting-q-plus').onclick = function() {
+      if (data.settings.questionsPerRound < 30) { data.settings.questionsPerRound += 5; Storage.save(data); UI.render_settings(); }
+    };
+    UI.$('setting-timer-toggle').onclick = function() {
+      data.settings.showTimer = !data.settings.showTimer; Storage.save(data); UI.render_settings();
+    };
+    UI.$('btn-reset').onclick = function() {
+      if (confirm('Alle Daten l\u00f6schen?')) { Storage.reset(); data = Storage._default(); UI.show('welcome'); }
+    };
+    // Level up overlay
+    UI.$('levelup-btn').onclick = function() { UI.$('level-up-overlay').classList.add('hidden'); };
+  }
+};
+
+document.addEventListener('DOMContentLoaded', function() { App.init(); });
+</script>
+</body>
+</html>
