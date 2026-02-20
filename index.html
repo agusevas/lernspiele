@@ -463,6 +463,74 @@ body {
   }
 }
 
+/* === NAME SECTION === */
+.name-section {
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  margin-bottom: 28px;
+  animation: fadeSlideUp 0.7s ease-out 0.45s both;
+}
+.name-prompt {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+.name-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+}
+.name-field {
+  flex: 1;
+  max-width: 240px;
+  padding: 12px 16px;
+  border: 3px solid var(--teal);
+  border-radius: 16px;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--white);
+  outline: none;
+  transition: border-color 0.2s;
+}
+.name-field:focus { border-color: var(--coral); }
+.name-field::placeholder { color: #ccc; }
+.name-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 16px;
+  background: var(--coral);
+  color: var(--white);
+  font-family: 'Fredoka', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+.name-btn:hover { background: var(--coral-deep); }
+.name-btn:active { transform: scale(0.96); }
+.name-greeting {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+}
+.name-edit-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  margin-left: 6px;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+.name-edit-btn:hover { opacity: 1; }
+
 /* === RESPONSIVE === */
 @media (max-width: 480px) {
   .header { padding: 40px 0 16px; }
@@ -512,6 +580,21 @@ body {
     <div class="wave-dot"></div>
     <div class="wave-dot"></div>
     <div class="wave-dot"></div>
+  </div>
+
+  <!-- Name Section -->
+  <div class="name-section" id="name-section">
+    <div id="name-input-area">
+      <div class="name-prompt">Wie hei&#223;t du?</div>
+      <div class="name-row">
+        <input type="text" class="name-field" id="player-name-input" placeholder="Dein Name" maxlength="20" autocomplete="off">
+        <button class="name-btn" id="player-name-btn">Los!</button>
+      </div>
+    </div>
+    <div id="name-greeting-area" style="display:none;">
+      <span class="name-greeting" id="player-greeting"></span>
+      <button class="name-edit-btn" id="player-name-edit" title="Name &#228;ndern">&#9998;</button>
+    </div>
   </div>
 
   <!-- Game Cards -->
@@ -615,6 +698,60 @@ body {
   setInterval(spawnFlake, 200);
   // Initial burst
   for (let i = 0; i < 30; i++) setTimeout(spawnFlake, i * 80);
+})();
+
+// Shared player name
+(function() {
+  var KEY = 'lernspiele-player';
+  var inputArea = document.getElementById('name-input-area');
+  var greetingArea = document.getElementById('name-greeting-area');
+  var nameInput = document.getElementById('player-name-input');
+  var nameBtn = document.getElementById('player-name-btn');
+  var greetingEl = document.getElementById('player-greeting');
+  var editBtn = document.getElementById('player-name-edit');
+
+  function load() {
+    try { var raw = localStorage.getItem(KEY); return raw ? JSON.parse(raw) : null; }
+    catch(e) { return null; }
+  }
+
+  function save(name) {
+    localStorage.setItem(KEY, JSON.stringify({ name: name }));
+  }
+
+  function showGreeting(name) {
+    greetingEl.textContent = 'Hallo, ' + name + '!';
+    inputArea.style.display = 'none';
+    greetingArea.style.display = '';
+  }
+
+  function showInput(prefill) {
+    inputArea.style.display = '';
+    greetingArea.style.display = 'none';
+    nameInput.value = prefill || '';
+    nameInput.focus();
+  }
+
+  function handleSave() {
+    var name = nameInput.value.trim();
+    if (!name) { nameInput.focus(); return; }
+    save(name);
+    showGreeting(name);
+  }
+
+  nameBtn.addEventListener('click', handleSave);
+  nameInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') handleSave();
+  });
+  editBtn.addEventListener('click', function() {
+    var p = load();
+    showInput(p ? p.name : '');
+  });
+
+  // Init
+  var player = load();
+  if (player && player.name) showGreeting(player.name);
+  else showInput();
 })();
 </script>
 </body>

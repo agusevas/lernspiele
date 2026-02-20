@@ -97,6 +97,22 @@ body {
   margin-bottom: 12px;
 }
 
+/* Back to landing */
+.btn-back-landing {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary);
+  padding: 6px 0;
+  margin-bottom: 4px;
+  transition: opacity 0.2s;
+}
+.btn-back-landing:hover { opacity: 0.7; }
+
 /* Welcome */
 #screen-welcome {
   justify-content: center;
@@ -654,6 +670,7 @@ body {
 
   <!-- Home -->
   <div class="screen hidden" id="screen-home">
+    <a href="../" class="btn-back-landing" title="Zur&#252;ck zur &#220;bersicht">&#8592; Alle Spiele</a>
     <div class="home-header">
       <h1>&#11088; Mathe Stars</h1>
       <div class="home-greeting" id="home-greeting"></div>
@@ -1545,12 +1562,28 @@ const Input = {
 
 /* ── APP ── */
 const App = {
+  _getSharedPlayer() {
+    try { var raw = localStorage.getItem('lernspiele-player'); return raw ? JSON.parse(raw) : null; }
+    catch(e) { return null; }
+  },
   init() {
     data = Storage.load();
     Input.init();
     this._bindEvents();
-    if (data.player) UI.show('home');
-    else UI.show('welcome');
+    var shared = this._getSharedPlayer();
+    if (data.player && shared && shared.name && shared.name !== data.player.name) {
+      data.player.name = shared.name;
+      Storage.save(data);
+    }
+    if (data.player) {
+      UI.show('home');
+    } else if (shared && shared.name) {
+      data.player = { name: shared.name, xp: 0, totalPoints: 0, dailyStreak: 0, lastPlayDate: null };
+      Storage.save(data);
+      UI.show('home');
+    } else {
+      UI.show('welcome');
+    }
   },
 
   _bindEvents() {
@@ -1560,6 +1593,7 @@ const App = {
       if (!name) { UI.$('name-input').focus(); return; }
       data.player = { name, xp: 0, totalPoints: 0, dailyStreak: 0, lastPlayDate: null };
       Storage.save(data);
+      localStorage.setItem('lernspiele-player', JSON.stringify({ name: name }));
       UI.show('home');
     });
     UI.$('name-input').addEventListener('keydown', e => {
@@ -1601,7 +1635,14 @@ const App = {
       if (confirm('Wirklich alle Daten l\u00f6schen?')) {
         Storage.reset();
         data = Storage.load();
-        UI.show('welcome');
+        var shared = App._getSharedPlayer();
+        if (shared && shared.name) {
+          data.player = { name: shared.name, xp: 0, totalPoints: 0, dailyStreak: 0, lastPlayDate: null };
+          Storage.save(data);
+          UI.show('home');
+        } else {
+          UI.show('welcome');
+        }
       }
     });
 

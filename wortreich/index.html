@@ -44,6 +44,21 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); -web
 .level-up-sub { font-size: 16px; color: var(--text-light); margin-top: 4px; }
 .level-up-btn { margin-top: 20px; padding: 10px 32px; border: none; border-radius: var(--radius); background: var(--primary); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; }
 @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+/* === BACK TO LANDING === */
+.btn-back-landing {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary);
+  padding: 6px 0;
+  margin-bottom: 4px;
+  transition: opacity 0.2s;
+}
+.btn-back-landing:hover { opacity: 0.7; }
 /* === WELCOME === */
 #screen-welcome { justify-content: center; align-items: center; text-align: center; gap: 20px; }
 .welcome-icon { font-size: 64px; animation: pulse 2s ease-in-out infinite; }
@@ -189,6 +204,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); -web
 </div>
 
 <div class="screen hidden" id="screen-home">
+  <a href="../" class="btn-back-landing" title="Zur&#252;ck zur &#220;bersicht">&#8592; Alle Spiele</a>
   <div class="home-header">
     <h1>📖 Wortreich</h1>
     <div class="home-greeting" id="home-greeting"></div>
@@ -1075,11 +1091,27 @@ var UI = {
 
 // === APP ===
 var App = {
+  _getSharedPlayer: function() {
+    try { var raw = localStorage.getItem('lernspiele-player'); return raw ? JSON.parse(raw) : null; }
+    catch(e) { return null; }
+  },
   init: function() {
     data = Storage.load();
     this._bindEvents();
-    if (data.player) UI.show('home');
-    else UI.show('welcome');
+    var shared = this._getSharedPlayer();
+    if (data.player && shared && shared.name && shared.name !== data.player.name) {
+      data.player.name = shared.name;
+      Storage.save(data);
+    }
+    if (data.player) {
+      UI.show('home');
+    } else if (shared && shared.name) {
+      data.player = {name: shared.name, xp: 0, totalPoints: 0};
+      Storage.save(data);
+      UI.show('home');
+    } else {
+      UI.show('welcome');
+    }
   },
   _bindEvents: function() {
     // Welcome
@@ -1088,6 +1120,7 @@ var App = {
       if (!name) return;
       data.player = {name:name, xp:0, totalPoints:0};
       Storage.save(data);
+      localStorage.setItem('lernspiele-player', JSON.stringify({name: name}));
       UI.show('home');
     };
     UI.$('name-input').addEventListener('keydown', function(e) {
@@ -1122,7 +1155,18 @@ var App = {
       data.settings.showTimer = !data.settings.showTimer; Storage.save(data); UI.render_settings();
     };
     UI.$('btn-reset').onclick = function() {
-      if (confirm('Alle Daten l\u00f6schen?')) { Storage.reset(); data = Storage._default(); UI.show('welcome'); }
+      if (confirm('Alle Daten l\u00f6schen?')) {
+        Storage.reset();
+        data = Storage._default();
+        var shared = App._getSharedPlayer();
+        if (shared && shared.name) {
+          data.player = {name: shared.name, xp: 0, totalPoints: 0};
+          Storage.save(data);
+          UI.show('home');
+        } else {
+          UI.show('welcome');
+        }
+      }
     };
     // Level up overlay
     UI.$('levelup-btn').onclick = function() { UI.$('level-up-overlay').classList.add('hidden'); };
