@@ -205,6 +205,33 @@ body {
 .nav-btn:hover { border-color: var(--primary-light); }
 .nav-btn .nav-icon { font-size: 32px; }
 
+/* Operation Toggle */
+.op-toggle {
+  display: flex;
+  background: #e8e0ff;
+  border-radius: var(--radius);
+  padding: 3px;
+  margin-bottom: 12px;
+}
+.op-toggle-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: calc(var(--radius) - 2px);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font);
+  background: transparent;
+  color: var(--text-light);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.op-toggle-btn.selected {
+  background: var(--card);
+  color: var(--primary);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
 /* Table Selection */
 .table-grid {
   display: grid;
@@ -695,7 +722,11 @@ body {
   <!-- Table Selection -->
   <div class="screen hidden" id="screen-tables">
     <button class="btn-back" id="tables-back">&#8592; Zur&#252;ck</button>
-    <div class="screen-title">W&#228;hle deine Reihen</div>
+    <div class="op-toggle" id="op-toggle">
+      <button class="op-toggle-btn selected" data-op="multiplication">&#215; Malnehmen</button>
+      <button class="op-toggle-btn" data-op="division">&#247; Teilen</button>
+    </div>
+    <div class="screen-title" id="tables-title">W&#228;hle deine Reihen</div>
     <div class="table-hint">Tippe auf eine oder mehrere Reihen</div>
     <div class="table-grid" id="table-grid"></div>
     <div class="table-actions">
@@ -754,6 +785,10 @@ body {
   <div class="screen hidden" id="screen-stats">
     <button class="btn-back" id="stats-back">&#8592; Zur&#252;ck</button>
     <div class="screen-title">Statistiken</div>
+    <div class="op-toggle" id="stats-op-toggle">
+      <button class="op-toggle-btn selected" data-op="multiplication">&#215; Malnehmen</button>
+      <button class="op-toggle-btn" data-op="division">&#247; Teilen</button>
+    </div>
     <div class="stats-overview" id="stats-overview"></div>
     <div class="card">
       <div style="font-weight:700;margin-bottom:10px;">Genauigkeit pro Reihe</div>
@@ -855,6 +890,12 @@ const Operations = {
     symbol: '\u00d7',
     generate(a, b) { return { a, b, answer: a * b }; },
     factKey(a, b) { return Math.min(a, b) + 'x' + Math.max(a, b); }
+  },
+  division: {
+    type: 'division',
+    symbol: '\u00f7',
+    generate(a, b) { return { a: a * b, b: b, answer: a }; },
+    factKey(a, b) { return (a * b) + 'd' + b; }
   }
 };
 let currentOp = Operations.multiplication;
@@ -905,20 +946,18 @@ const QuestionGenerator = {
     const pool = [];
     for (const t of tables) {
       for (let i = 1; i <= 10; i++) {
-        pool.push({ a: i, b: t });
+        pool.push({ a: i, b: t, _factKey: op.factKey(i, t) });
       }
     }
     // Deduplicate by canonical key
     const seen = new Set();
     const unique = [];
     for (const q of pool) {
-      const key = op.factKey(q.a, q.b);
-      if (!seen.has(key)) { seen.add(key); unique.push(q); }
+      if (!seen.has(q._factKey)) { seen.add(q._factKey); unique.push(q); }
     }
     // Weight by weakness
     const weighted = unique.map(q => {
-      const key = op.factKey(q.a, q.b);
-      const fact = data.facts[key];
+      const fact = data.facts[q._factKey];
       let w;
       if (!fact || fact.attempts === 0) w = 150;
       else w = Math.max(10, 100 - Math.round(fact.correct / fact.attempts * 100));
@@ -943,11 +982,14 @@ const QuestionGenerator = {
       selected.push({ ...weakest[selected.length % weakest.length] });
     }
     // Randomize operand order and build questions
+    const isDivision = op.type === 'division';
     return this._shuffle(selected).map(q => {
-      const swap = Math.random() < 0.5;
+      const swap = !isDivision && Math.random() < 0.5;
       const a = swap ? q.b : q.a;
       const b = swap ? q.a : q.b;
-      return op.generate(a, b);
+      const generated = op.generate(a, b);
+      generated._factKey = q._factKey;
+      return generated;
     });
   },
   _shuffle(arr) {
@@ -1074,9 +1116,15 @@ const Stats = {
   },
   overview() {
     const s = data.sessions;
-    const totalSessions = s.length;
+    const keySep = currentOp.type === 'division' ? 'd' : 'x';
+    const filteredSessions = s.filter(sess => {
+      const sessOp = sess.operation || 'multiplication';
+      return sessOp === currentOp.type;
+    });
+    const totalSessions = filteredSessions.length;
     let totalCorrect = 0, totalAttempts = 0, totalTime = 0, timeCount = 0;
     for (const key in data.facts) {
+      if (!key.includes(keySep)) continue;
       const f = data.facts[key];
       totalCorrect += f.correct;
       totalAttempts += f.attempts;
@@ -1134,6 +1182,13 @@ const UI = {
   _yesterday() { const d = new Date(); d.setDate(d.getDate()-1); return d.toISOString().split('T')[0]; },
 
   render_tables() {
+    const isDivision = currentOp.type === 'division';
+    // Sync toggle
+    this.$('op-toggle').querySelectorAll('.op-toggle-btn').forEach(b => {
+      b.classList.toggle('selected', b.dataset.op === currentOp.type);
+    });
+    // Dynamic title
+    this.$('tables-title').textContent = isDivision ? 'W\u00e4hle deine Teiler' : 'W\u00e4hle deine Reihen';
     const grid = this.$('table-grid');
     grid.innerHTML = '';
     for (let t = 1; t <= 10; t++) {
@@ -1153,9 +1208,14 @@ const UI = {
     }
     const startBtn = this.$('btn-start-game');
     startBtn.classList.toggle('hidden', GameEngine.selectedTables.size === 0);
-    if (GameEngine.selectedTables.size > 1) startBtn.textContent = 'Gemischt starten (' + GameEngine.selectedTables.size + ' Reihen)';
-    else if (GameEngine.selectedTables.size === 1) startBtn.textContent = [...GameEngine.selectedTables][0] + 'er-Reihe \u00fcben';
-    else startBtn.textContent = '';
+    if (GameEngine.selectedTables.size > 1) {
+      startBtn.textContent = 'Gemischt starten (' + GameEngine.selectedTables.size + (isDivision ? ' Teiler)' : ' Reihen)');
+    } else if (GameEngine.selectedTables.size === 1) {
+      const t = [...GameEngine.selectedTables][0];
+      startBtn.textContent = isDivision ? 'Geteilt durch ' + t + ' \u00fcben' : t + 'er-Reihe \u00fcben';
+    } else {
+      startBtn.textContent = '';
+    }
   },
 
   render_game() {
@@ -1246,6 +1306,11 @@ const UI = {
   },
 
   render_stats() {
+    const isDivision = currentOp.type === 'division';
+    // Sync toggle
+    this.$('stats-op-toggle').querySelectorAll('.op-toggle-btn').forEach(b => {
+      b.classList.toggle('selected', b.dataset.op === currentOp.type);
+    });
     const ov = Stats.overview();
     this.$('stats-overview').innerHTML =
       '<div class="stat-card"><div class="val">' + ov.totalSessions + '</div><div class="label">\u00dcbungen</div></div>' +
@@ -1255,7 +1320,8 @@ const UI = {
     let chartHtml = '';
     for (let t = 1; t <= 10; t++) {
       const m = Stats.tableMastery(t);
-      chartHtml += '<div class="bar-row"><span class="bar-label">' + t + 'er</span><div class="bar-track"><div class="bar-fill" style="width:' + m + '%"></div></div><span class="bar-value">' + m + '%</span></div>';
+      const label = isDivision ? '\u00f7' + t : t + 'er';
+      chartHtml += '<div class="bar-row"><span class="bar-label">' + label + '</span><div class="bar-track"><div class="bar-fill" style="width:' + m + '%"></div></div><span class="bar-value">' + m + '%</span></div>';
     }
     this.$('stats-chart').innerHTML = chartHtml;
     // History
@@ -1268,7 +1334,14 @@ const UI = {
         const dateStr = d.toLocaleDateString('de-DE', { day:'numeric', month:'short' });
         const stars = '\u2b50'.repeat(s.stars);
         const tablesStr = s.tables ? s.tables.join(', ') : '-';
-        const modeStr = s.mode === 'mixed' ? 'Gemischt' : tablesStr + 'er';
+        const sessOp = s.operation || 'multiplication';
+        const opSymbol = sessOp === 'division' ? '\u00f7' : '\u00d7';
+        let modeStr;
+        if (s.mode === 'mixed') {
+          modeStr = 'Gemischt ' + opSymbol;
+        } else {
+          modeStr = sessOp === 'division' ? '\u00f7' + tablesStr : tablesStr + 'er';
+        }
         return '<div class="history-item"><div><div class="history-mode">' + modeStr + '</div><div class="history-meta">' + dateStr + ' \u2022 ' + Math.round(s.firstTryAcc * 100) + '% \u2022 ' + s.totalPoints + ' Pkt.</div></div><div class="history-stars">' + (stars || '\u2606') + '</div></div>';
       }).join('');
     }
@@ -1432,7 +1505,7 @@ const GameEngine = {
     this.results.push({ a: q.a, b: q.b, answer: q.answer, userAnswer, correct, timeMs, isRetry });
 
     // Update fact stats
-    const key = currentOp.factKey(q.a, q.b);
+    const key = q._factKey || currentOp.factKey(q.a, q.b);
     if (!data.facts[key]) data.facts[key] = { attempts: 0, correct: 0, totalTimeMs: 0 };
     if (!isRetry) {
       data.facts[key].attempts++;
@@ -1461,7 +1534,7 @@ const GameEngine = {
       UI.$('game-streak').textContent = '';
       // Re-queue once
       if (!isRetry) {
-        this.queue.push({ a: q.a, b: q.b, answer: q.answer, _isRetry: true });
+        this.queue.push({ a: q.a, b: q.b, answer: q.answer, _isRetry: true, _factKey: q._factKey });
       }
       setTimeout(() => this._nextQuestion(), 2000);
     }
@@ -1498,6 +1571,7 @@ const GameEngine = {
     // Save session
     const sessionSummary = {
       timestamp: Date.now(),
+      operation: currentOp.type,
       mode: this.mode,
       tables: [...this.selectedTables],
       totalPoints: this.totalPoints,
@@ -1601,8 +1675,8 @@ const App = {
     });
 
     // Home nav
-    UI.$('nav-practice').addEventListener('click', () => { GameEngine.selectedTables.clear(); UI.show('tables'); });
-    UI.$('nav-stats').addEventListener('click', () => UI.show('stats'));
+    UI.$('nav-practice').addEventListener('click', () => { GameEngine.selectedTables.clear(); currentOp = Operations.multiplication; UI.show('tables'); });
+    UI.$('nav-stats').addEventListener('click', () => { currentOp = Operations.multiplication; UI.show('stats'); });
     UI.$('nav-achievements').addEventListener('click', () => UI.show('achievements'));
     UI.$('nav-settings').addEventListener('click', () => UI.show('settings'));
 
@@ -1613,6 +1687,21 @@ const App = {
     // Results
     UI.$('btn-results-home').addEventListener('click', () => UI.show('home'));
     UI.$('btn-results-retry').addEventListener('click', () => GameEngine.startSession());
+
+    // Operation toggles
+    UI.$('op-toggle').addEventListener('click', e => {
+      const btn = e.target.closest('.op-toggle-btn');
+      if (!btn || btn.dataset.op === currentOp.type) return;
+      currentOp = Operations[btn.dataset.op];
+      GameEngine.selectedTables.clear();
+      UI.render_tables();
+    });
+    UI.$('stats-op-toggle').addEventListener('click', e => {
+      const btn = e.target.closest('.op-toggle-btn');
+      if (!btn || btn.dataset.op === currentOp.type) return;
+      currentOp = Operations[btn.dataset.op];
+      UI.render_stats();
+    });
 
     // Stats
     UI.$('stats-back').addEventListener('click', () => UI.show('home'));
