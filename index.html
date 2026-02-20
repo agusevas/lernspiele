@@ -4,97 +4,601 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lernspiele</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
-  --primary: #7c4dff;
-  --primary-light: #b388ff;
-  --bg: #f0f0ff;
-  --card: #ffffff;
-  --text: #2d2d2d;
-  --text-light: #888;
-  --shadow: 0 2px 12px rgba(0,0,0,0.1);
-  --radius: 16px;
-  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --coral: #FF6B6B;
+  --coral-deep: #E85D5D;
+  --teal: #4ECDC4;
+  --teal-deep: #3DB8B0;
+  --sunny: #FFE66D;
+  --sunny-deep: #FFD93D;
+  --sky: #74B9FF;
+  --pink: #FD79A8;
+  --mint: #A3E4D7;
+  --cream: #FFF9F0;
+  --cream-warm: #FFF3E0;
+  --text: #2D3436;
+  --text-soft: #636E72;
+  --white: #FFFFFF;
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
 body {
-  font-family: var(--font);
-  background: var(--bg);
+  font-family: 'Nunito', sans-serif;
+  background: var(--cream);
   color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* === ANIMATED BACKGROUND === */
+.bg-scene {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.bg-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.3;
+  animation: blobDrift 20s ease-in-out infinite alternate;
+}
+.bg-blob:nth-child(1) {
+  width: 500px; height: 500px;
+  background: var(--coral);
+  top: -15%; left: -10%;
+  animation-duration: 22s;
+}
+.bg-blob:nth-child(2) {
+  width: 400px; height: 400px;
+  background: var(--teal);
+  top: 50%; right: -8%;
+  animation-duration: 18s;
+  animation-delay: -5s;
+}
+.bg-blob:nth-child(3) {
+  width: 350px; height: 350px;
+  background: var(--sunny);
+  bottom: -10%; left: 20%;
+  animation-duration: 25s;
+  animation-delay: -10s;
+}
+
+@keyframes blobDrift {
+  0% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.05); }
+  66% { transform: translate(-20px, 30px) scale(0.95); }
+  100% { transform: translate(15px, 15px) scale(1.02); }
+}
+
+/* Floating shapes */
+.float-shape {
+  position: absolute;
+  opacity: 0.15;
+  animation: floatAround linear infinite;
+}
+
+.float-shape--star {
+  width: 24px; height: 24px;
+  background: var(--sunny);
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+.float-shape--circle {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--pink);
+}
+.float-shape--triangle {
+  width: 20px; height: 20px;
+  background: var(--teal);
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+.float-shape--diamond {
+  width: 16px; height: 16px;
+  background: var(--sky);
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+.float-shape--plus {
+  width: 20px; height: 20px;
+  background: var(--coral);
+  clip-path: polygon(35% 0%, 65% 0%, 65% 35%, 100% 35%, 100% 65%, 65% 65%, 65% 100%, 35% 100%, 35% 65%, 0% 65%, 0% 35%, 35% 35%);
+}
+
+@keyframes floatAround {
+  0% { transform: translateY(110vh) rotate(0deg); }
+  100% { transform: translateY(-20vh) rotate(360deg); }
+}
+
+/* === MAIN LAYOUT === */
+.page-wrapper {
+  position: relative;
+  z-index: 1;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 40px 20px;
+  padding: 0 20px;
 }
-h1 {
-  font-size: 36px;
-  font-weight: 800;
-  color: var(--primary);
-  margin-bottom: 8px;
+
+/* === HEADER === */
+.header {
+  text-align: center;
+  padding: 60px 0 20px;
+  animation: fadeSlideDown 0.8s ease-out both;
 }
-.subtitle {
-  color: var(--text-light);
-  font-size: 16px;
-  margin-bottom: 40px;
+
+@keyframes fadeSlideDown {
+  from { opacity: 0; transform: translateY(-30px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-.games {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 20px;
+
+.logo-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.logo-icon {
+  font-size: 52px;
+  display: inline-block;
+  animation: wiggle 3s ease-in-out infinite;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-5deg); }
+  25% { transform: rotate(5deg); }
+  50% { transform: rotate(-3deg); }
+  75% { transform: rotate(3deg); }
+}
+
+.logo-text {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 52px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--coral) 0%, var(--pink) 40%, var(--teal) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -1px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.06));
+}
+
+.tagline {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--text-soft);
+  margin-top: 4px;
+  animation: fadeSlideDown 0.8s ease-out 0.2s both;
+}
+
+.tagline-highlight {
+  color: var(--coral);
+  font-weight: 600;
+}
+
+/* === WAVE DIVIDER === */
+.wave-divider {
   width: 100%;
-  max-width: 800px;
+  max-width: 320px;
+  margin: 24px auto 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  animation: fadeSlideDown 0.8s ease-out 0.35s both;
 }
+.wave-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  animation: dotBounce 2s ease-in-out infinite;
+}
+.wave-dot:nth-child(1) { background: var(--coral); animation-delay: 0s; }
+.wave-dot:nth-child(2) { background: var(--sunny); animation-delay: 0.15s; }
+.wave-dot:nth-child(3) { background: var(--teal); animation-delay: 0.3s; }
+.wave-dot:nth-child(4) { background: var(--sky); animation-delay: 0.45s; }
+.wave-dot:nth-child(5) { background: var(--pink); animation-delay: 0.6s; }
+.wave-dot:nth-child(6) { background: var(--coral); animation-delay: 0.75s; }
+.wave-dot:nth-child(7) { background: var(--sunny); animation-delay: 0.9s; }
+
+@keyframes dotBounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-6px) scale(1.2); }
+}
+
+/* === GAMES GRID === */
+.games-section {
+  width: 100%;
+  max-width: 720px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+  animation: fadeSlideUp 0.7s ease-out 0.5s both;
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* === GAME CARD === */
 .game-card {
-  background: var(--card);
-  border-radius: var(--radius);
-  padding: 28px 24px;
-  box-shadow: var(--shadow);
+  position: relative;
+  background: var(--white);
+  border-radius: 28px;
+  padding: 32px 28px 28px;
   text-decoration: none;
   color: var(--text);
-  transition: transform 0.15s, box-shadow 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border: 3px solid transparent;
+  box-shadow:
+    0 4px 16px rgba(0,0,0,0.06),
+    0 1px 4px rgba(0,0,0,0.04);
+  transition:
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
+  overflow: hidden;
+}
+
+.game-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 6px;
+  background: linear-gradient(90deg, var(--sunny), var(--coral), var(--pink));
+  border-radius: 28px 28px 0 0;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.game-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  border-color: var(--sunny-deep);
+  box-shadow:
+    0 16px 40px rgba(255, 107, 107, 0.15),
+    0 8px 20px rgba(0,0,0,0.08);
+}
+.game-card:hover::before { opacity: 1; }
+
+.game-card:active {
+  transform: translateY(-4px) scale(0.99);
+  transition-duration: 0.1s;
+}
+
+/* Card inner glow on hover */
+.game-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 25px;
+  background: radial-gradient(circle at 30% 20%, rgba(255, 230, 109, 0.08), transparent 60%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.game-card:hover::after { opacity: 1; }
+
+.game-card-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #FFF9E6, #FFF3CC);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 38px;
+  box-shadow: 0 4px 12px rgba(255, 214, 0, 0.2);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.game-card:hover .game-card-icon {
+  transform: rotate(-8deg) scale(1.1);
+}
+
+.game-card-content {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  position: relative;
+  z-index: 1;
 }
-.game-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 6px 24px rgba(0,0,0,0.15);
+
+.game-card-title {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
 }
-.game-card:active { transform: scale(0.98); }
-.game-icon { font-size: 48px; }
-.game-title { font-size: 22px; font-weight: 700; }
-.game-desc { font-size: 14px; color: var(--text-light); line-height: 1.5; }
-.game-tag {
-  display: inline-block;
-  margin-top: 4px;
-  padding: 4px 10px;
-  background: #ede7ff;
-  color: var(--primary);
-  border-radius: 8px;
-  font-size: 12px;
+
+.game-card-desc {
+  font-size: 15px;
   font-weight: 600;
-  align-self: flex-start;
+  color: var(--text-soft);
+  line-height: 1.6;
 }
-footer {
-  margin-top: auto;
-  padding-top: 40px;
-  color: var(--text-light);
+
+.game-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.game-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  background: linear-gradient(135deg, #E8F8F5, #D5F5E3);
+  color: var(--teal-deep);
+  border-radius: 20px;
   font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.game-card-arrow {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--cream);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.game-card-arrow svg {
+  width: 18px;
+  height: 18px;
+  color: var(--text-soft);
+  transition: color 0.3s ease, transform 0.3s ease;
+}
+.game-card:hover .game-card-arrow {
+  background: var(--coral);
+  transform: scale(1.1);
+}
+.game-card:hover .game-card-arrow svg {
+  color: var(--white);
+  transform: translateX(2px);
+}
+
+/* === COMING SOON CARD === */
+.game-card--soon {
+  border: 3px dashed #E0D6CC;
+  background: linear-gradient(135deg, var(--cream), var(--cream-warm));
+  box-shadow: none;
+  cursor: default;
+  opacity: 0.7;
+}
+.game-card--soon:hover {
+  transform: none;
+  border-color: #E0D6CC;
+  box-shadow: none;
+}
+.game-card--soon::before, .game-card--soon::after { display: none; }
+.game-card--soon .game-card-icon {
+  background: linear-gradient(135deg, #F0EBE3, #E8E2D9);
+  box-shadow: none;
+  filter: grayscale(0.5);
+}
+.game-card--soon:hover .game-card-icon { transform: none; }
+.game-card--soon .game-card-title { color: var(--text-soft); }
+.game-card--soon .game-tag {
+  background: #F0EBE3;
+  color: #B2A89D;
+}
+
+/* === FOOTER === */
+.footer {
+  margin-top: auto;
+  padding: 48px 0 32px;
+  text-align: center;
+  animation: fadeSlideUp 0.7s ease-out 0.7s both;
+}
+
+.footer-text {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-soft);
+  opacity: 0.6;
+}
+
+.footer-hearts {
+  display: inline-flex;
+  gap: 4px;
+  margin: 0 4px;
+}
+.footer-hearts span {
+  display: inline-block;
+  animation: heartbeat 2s ease-in-out infinite;
+}
+.footer-hearts span:nth-child(2) { animation-delay: 0.3s; }
+.footer-hearts span:nth-child(3) { animation-delay: 0.6s; }
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  15% { transform: scale(1.25); }
+  30% { transform: scale(1); }
+}
+
+/* === SNOWFLAKES === */
+.snowflake {
+  position: fixed;
+  top: -20px;
+  color: #fff;
+  font-size: 14px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  text-shadow: 0 0 4px rgba(255,255,255,0.6);
+  animation: snowfall linear forwards;
+}
+
+@keyframes snowfall {
+  0% {
+    opacity: 0;
+    transform: translateX(0) rotate(0deg);
+  }
+  5% { opacity: var(--snow-opacity, 0.7); }
+  90% { opacity: var(--snow-opacity, 0.7); }
+  100% {
+    opacity: 0;
+    transform: translateX(var(--snow-drift, 60px)) rotate(var(--snow-rot, 360deg));
+    top: 105vh;
+  }
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 480px) {
+  .header { padding: 40px 0 16px; }
+  .logo-text { font-size: 38px; }
+  .logo-icon { font-size: 40px; }
+  .tagline { font-size: 17px; }
+  .games-section { grid-template-columns: 1fr; gap: 20px; }
+  .game-card { padding: 24px 22px 22px; border-radius: 24px; }
+  .game-card-icon { width: 60px; height: 60px; font-size: 32px; border-radius: 16px; }
+  .game-card-title { font-size: 22px; }
+}
+
+@media (min-width: 768px) {
+  .logo-text { font-size: 60px; }
+  .logo-icon { font-size: 58px; }
+  .tagline { font-size: 22px; }
+  .games-section { max-width: 900px; grid-template-columns: repeat(2, 1fr); }
 }
 </style>
 </head>
 <body>
-<h1>&#127922; Lernspiele</h1>
-<p class="subtitle">Spielend lernen!</p>
-<div class="games">
-  <a class="game-card" href="mathe-stars/">
-    <div class="game-icon">&#11088;</div>
-    <div class="game-title">Mathe Stars</div>
-    <div class="game-desc">Werde zum Einmaleins-Profi! &#220;be die Malreihen 1-10 mit Punkten, Levels und Erfolgen.</div>
-    <span class="game-tag">Multiplikation</span>
-  </a>
+
+<!-- Animated background -->
+<div class="bg-scene">
+  <div class="bg-blob"></div>
+  <div class="bg-blob"></div>
+  <div class="bg-blob"></div>
 </div>
-<footer>Lernspiele f&#252;r Kinder</footer>
+
+<div class="page-wrapper">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="logo-row">
+      <span class="logo-icon">&#127922;</span>
+      <span class="logo-text">Lernspiele</span>
+    </div>
+    <p class="tagline"><span class="tagline-highlight">Spielend</span> lernen, lachend verstehen!</p>
+  </header>
+
+  <!-- Bouncing dot divider -->
+  <div class="wave-divider">
+    <div class="wave-dot"></div>
+    <div class="wave-dot"></div>
+    <div class="wave-dot"></div>
+    <div class="wave-dot"></div>
+    <div class="wave-dot"></div>
+    <div class="wave-dot"></div>
+    <div class="wave-dot"></div>
+  </div>
+
+  <!-- Game Cards -->
+  <div class="games-section">
+
+    <a class="game-card" href="mathe-stars/">
+      <div class="game-card-icon">&#11088;</div>
+      <div class="game-card-content">
+        <div class="game-card-title">Mathe Stars</div>
+        <div class="game-card-desc">Werde zum Einmaleins-Profi! &#220;be die Malreihen 1&#8211;10 mit Punkten, Levels und Erfolgen.</div>
+      </div>
+      <div class="game-card-footer">
+        <span class="game-tag">&#10006;&#65039; Multiplikation</span>
+        <div class="game-card-arrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </div>
+      </div>
+    </a>
+
+    <div class="game-card game-card--soon">
+      <div class="game-card-icon">&#129528;</div>
+      <div class="game-card-content">
+        <div class="game-card-title">Kommt bald&#8230;</div>
+        <div class="game-card-desc">Neue Spiele sind in Arbeit! Schau bald wieder vorbei.</div>
+      </div>
+      <div class="game-card-footer">
+        <span class="game-tag">&#128296; In Arbeit</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p class="footer-text">
+      Gemacht mit
+      <span class="footer-hearts"><span>&#10084;&#65039;</span><span>&#10084;&#65039;</span><span>&#10084;&#65039;</span></span>
+      f&#252;r kleine Entdecker
+    </p>
+  </footer>
+
+</div>
+
+<script>
+// Spawn floating background shapes
+(function() {
+  const scene = document.querySelector('.bg-scene');
+  const shapes = ['star', 'circle', 'triangle', 'diamond', 'plus'];
+  const count = Math.min(20, Math.floor(window.innerWidth / 60));
+
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('div');
+    const shape = shapes[Math.floor(Math.random() * shapes.length)];
+    el.className = 'float-shape float-shape--' + shape;
+    el.style.left = Math.random() * 100 + '%';
+    el.style.animationDuration = (12 + Math.random() * 18) + 's';
+    el.style.animationDelay = -(Math.random() * 30) + 's';
+    el.style.opacity = 0.08 + Math.random() * 0.12;
+    const s = 0.6 + Math.random() * 1.2;
+    el.style.width = el.style.height = '';
+    el.style.transform = 'scale(' + s + ')';
+    scene.appendChild(el);
+  }
+})();
+
+// Snowfall
+(function() {
+  const flakes = ['\u2744', '\u2746', '\u2745', '\u00b7', '\u2022'];
+  function spawnFlake() {
+    const el = document.createElement('div');
+    el.className = 'snowflake';
+    el.textContent = flakes[Math.floor(Math.random() * flakes.length)];
+    el.style.left = Math.random() * 100 + 'vw';
+    el.style.fontSize = (10 + Math.random() * 16) + 'px';
+    const duration = 6 + Math.random() * 8;
+    el.style.animationDuration = duration + 's';
+    el.style.setProperty('--snow-drift', (Math.random() * 120 - 60) + 'px');
+    el.style.setProperty('--snow-rot', (Math.random() * 720 - 360) + 'deg');
+    el.style.setProperty('--snow-opacity', (0.4 + Math.random() * 0.5).toFixed(2));
+    document.body.appendChild(el);
+    setTimeout(function() { el.remove(); }, duration * 1000);
+  }
+  // Spawn snowflakes at a steady rate
+  setInterval(spawnFlake, 200);
+  // Initial burst
+  for (let i = 0; i < 30; i++) setTimeout(spawnFlake, i * 80);
+})();
+</script>
 </body>
 </html>
