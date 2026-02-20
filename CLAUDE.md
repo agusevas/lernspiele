@@ -16,6 +16,7 @@ Open `index.html` in a browser. No build step needed.
 index.html              # Landing page (links to all games)
 mathe-stars/index.html  # Math arithmetic game
 wuerfelnetze/index.html # Cube net spatial reasoning game
+wortreich/index.html    # German grammar game (cases & irregular verbs)
 ```
 
 Each game is a **single self-contained HTML file** with inline CSS and JS. No shared code between games.
@@ -39,7 +40,7 @@ Additional screens: Stats, Achievements, Settings
 ## Data Persistence
 
 - localStorage with JSON serialization
-- Single key per game (`mathStars`, `wuerfelnetze`)
+- Single key per game (`mathStars`, `wuerfelnetze`, `wortreich`)
 - `Storage` object handles load/save/reset
 - Auto-save on state changes
 

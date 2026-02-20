@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Wortreich - Lernspiele</title>
+<style>
+:root {
+  --primary: #C77B0B;
+  --primary-light: #E8A835;
+  --primary-dark: #A66508;
+  --secondary: #1B8C5A;
+  --success: #2ecc71;
+  --warning: #f39c12;
+  --bg: #FDF6E3;
+  --card: #ffffff;
+  --text: #3D2B1F;
+  --text-light: #8B7355;
+  --error: #D94040;
+  --shadow: 0 2px 8px rgba(61,43,31,0.1);
+  --shadow-lg: 0 4px 16px rgba(61,43,31,0.15);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-pill: 50px;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); -webkit-tap-highlight-color: transparent; user-select: none; }
+#app { max-width: 480px; margin: 0 auto; height: 100%; position: relative; overflow: hidden; }
+.hidden { display: none !important; }
+.screen { position: absolute; inset: 0; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; transition: opacity 0.25s ease; }
+/* === TOAST === */
+#toast-container { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 1000; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.toast { background: var(--card); padding: 12px 20px; border-radius: var(--radius); box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; animation: toastIn 0.3s ease; white-space: nowrap; }
+.toast--fade { opacity: 0; transition: opacity 0.3s; }
+.toast-icon { font-size: 20px; }
+@keyframes toastIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+/* === LEVEL UP OVERLAY === */
+#level-up-overlay { position: fixed; inset: 0; z-index: 900; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; }
+.level-up-card { background: var(--card); border-radius: 20px; padding: 32px; text-align: center; animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1); max-width: 300px; }
+.level-up-icon { font-size: 48px; margin-bottom: 12px; }
+.level-up-title { font-size: 24px; font-weight: 800; color: var(--primary); }
+.level-up-sub { font-size: 16px; color: var(--text-light); margin-top: 4px; }
+.level-up-btn { margin-top: 20px; padding: 10px 32px; border: none; border-radius: var(--radius); background: var(--primary); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; }
+@keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+/* === WELCOME === */
+#screen-welcome { justify-content: center; align-items: center; text-align: center; gap: 20px; }
+.welcome-icon { font-size: 64px; animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+.welcome-title { font-size: 36px; font-weight: 800; color: var(--primary); }
+.welcome-sub { font-size: 16px; color: var(--text-light); }
+.welcome-input { width: 100%; max-width: 260px; padding: 14px 18px; border: 2px solid #ddd; border-radius: var(--radius); font-size: 18px; text-align: center; outline: none; transition: border-color 0.2s; font-family: var(--font); }
+.welcome-input:focus { border-color: var(--primary); }
+/* === BUTTONS === */
+.btn { padding: 14px 28px; border: none; border-radius: var(--radius); font-size: 16px; font-weight: 700; cursor: pointer; font-family: var(--font); transition: transform 0.15s, box-shadow 0.15s; }
+.btn:active { transform: scale(0.96); }
+.btn-primary { background: var(--primary); color: #fff; box-shadow: 0 4px 12px rgba(199,123,11,0.3); }
+.btn-primary:hover { box-shadow: 0 6px 16px rgba(199,123,11,0.4); }
+.btn-large { padding: 16px 36px; font-size: 18px; }
+.btn-back { background: none; border: none; font-size: 14px; color: var(--text-light); cursor: pointer; padding: 8px 0; font-weight: 600; }
+.btn-back:hover { color: var(--text); }
+/* === HOME === */
+#screen-home { gap: 16px; }
+.home-header { text-align: center; padding-top: 20px; }
+.home-header h1 { font-size: 28px; font-weight: 800; color: var(--primary); }
+.home-greeting { font-size: 16px; color: var(--text-light); margin-top: 4px; }
+.card { background: var(--card); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); }
+.level-card { text-align: center; margin-top: 8px; }
+.level-badge { display: inline-block; background: var(--primary); color: #fff; padding: 4px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; }
+.level-title { font-size: 18px; font-weight: 700; margin: 6px 0; }
+.xp-bar-container { position: relative; height: 20px; background: #e8e8e8; border-radius: 10px; overflow: hidden; margin-top: 8px; }
+.xp-bar-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-light)); border-radius: 10px; transition: width 0.5s ease; }
+.xp-bar-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--text); }
+.nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+.nav-btn { background: var(--card); border: 2px solid #e8e8e8; border-radius: var(--radius); padding: 16px 10px; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; font-family: var(--font); transition: border-color 0.2s, transform 0.15s; }
+.nav-btn:hover { border-color: var(--primary); }
+.nav-btn:active { transform: scale(0.97); }
+.nav-btn-icon { font-size: 28px; }
+.nav-btn-label { font-size: 13px; font-weight: 700; color: var(--text); text-align: center; }
+.nav-btn-sub { font-size: 11px; color: var(--text-light); text-align: center; }
+/* === MODE SELECT / DIFFICULTY === */
+#screen-mode-select { justify-content: center; align-items: center; text-align: center; gap: 16px; }
+.mode-title { font-size: 22px; font-weight: 800; color: var(--primary); }
+.mode-desc { font-size: 14px; color: var(--text-light); max-width: 300px; }
+.diff-grid { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 280px; }
+.diff-btn { padding: 16px; border: 2px solid #e8e8e8; border-radius: var(--radius); background: var(--card); font-size: 16px; font-weight: 700; cursor: pointer; font-family: var(--font); transition: border-color 0.2s, transform 0.15s; display: flex; align-items: center; gap: 10px; }
+.diff-btn:active { transform: scale(0.97); }
+.diff-btn--easy { border-color: #d5f5e3; }
+.diff-btn--easy:hover { border-color: var(--success); background: #f0fdf4; }
+.diff-btn--medium { border-color: #fdebd0; }
+.diff-btn--medium:hover { border-color: var(--warning); background: #fffbf0; }
+.diff-btn--hard { border-color: #fadbd8; }
+.diff-btn--hard:hover { border-color: var(--error); background: #fff5f5; }
+.diff-icon { font-size: 22px; }
+.diff-label { display: flex; flex-direction: column; align-items: flex-start; }
+.diff-label span:first-child { font-size: 16px; }
+.diff-label span:last-child { font-size: 11px; color: var(--text-light); font-weight: 500; }
+/* === COUNTDOWN === */
+#screen-countdown { justify-content: center; align-items: center; }
+#countdown-num { font-size: 96px; font-weight: 800; color: var(--primary); }
+@keyframes countPop { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+/* === GAME === */
+#screen-game { gap: 12px; padding-top: 12px; }
+.game-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.game-progress { flex: 1; height: 8px; background: #e8e8e8; border-radius: 4px; overflow: hidden; }
+.game-progress-fill { height: 100%; background: var(--primary); border-radius: 4px; transition: width 0.3s ease; }
+.game-progress-text { font-size: 12px; font-weight: 700; color: var(--text-light); white-space: nowrap; }
+.game-timer { font-size: 13px; font-weight: 700; color: var(--text-light); font-variant-numeric: tabular-nums; }
+.game-question { display: flex; flex-direction: column; align-items: center; gap: 12px; flex: 1; justify-content: center; min-height: 0; }
+.question-label { font-size: 17px; font-weight: 700; text-align: center; color: var(--text); }
+.game-answers { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; padding-bottom: 16px; }
+/* Sentence display */
+.sentence-display { font-size: 20px; font-weight: 700; text-align: center; line-height: 1.8; padding: 8px 16px; }
+.blank-slot { display: inline-block; min-width: 55px; border-bottom: 3px solid var(--primary); padding: 2px 8px; color: var(--primary); animation: blankPulse 1.5s ease-in-out infinite; text-align: center; }
+@keyframes blankPulse { 0%,100% { border-color: var(--primary); } 50% { border-color: var(--primary-light); } }
+.highlight-mark { background: linear-gradient(to bottom, transparent 60%, rgba(199,123,11,0.25) 60%); padding: 2px 4px; border-radius: 4px; color: var(--primary-dark); }
+/* Verb chain */
+.verb-chain { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
+.verb-card { background: var(--card); border: 2px solid #e8e8e8; border-radius: var(--radius); padding: 10px 14px; font-size: 17px; font-weight: 700; text-align: center; }
+.verb-arrow { font-size: 18px; color: var(--text-light); font-weight: 700; }
+.verb-blank { border: 2px dashed var(--primary); color: var(--primary); min-width: 55px; animation: blankPulse 1.5s ease-in-out infinite; }
+.hilfsverb-hint { font-size: 13px; color: var(--secondary); font-weight: 600; text-align: center; }
+/* Prep question */
+.prep-display { font-size: 28px; font-weight: 800; color: var(--primary); margin: 12px 0; padding: 16px 32px; background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); }
+/* Answer pills */
+.answer-pill { padding: 12px 24px; border: 2px solid #e8e8e8; border-radius: var(--radius-pill); background: var(--card); font-size: 17px; font-weight: 700; cursor: pointer; font-family: var(--font); transition: all 0.15s; text-align: center; min-width: 70px; }
+.answer-pill:hover { border-color: var(--primary); background: #FFF8E7; }
+.answer-pill:active { transform: scale(0.96); }
+.answer-pill--match { padding: 10px 18px; font-size: 15px; min-width: 120px; }
+/* Feedback */
+.feedback { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 48px; font-weight: 800; pointer-events: none; z-index: 100; opacity: 0; }
+.feedback--correct { color: var(--success); opacity: 1; }
+.feedback--wrong { color: var(--error); opacity: 1; }
+@keyframes feedbackPop { 0% { transform: translate(-50%,-50%) scale(0.5); opacity: 0; } 30% { transform: translate(-50%,-50%) scale(1.2); opacity: 1; } 100% { transform: translate(-50%,-50%) scale(1) translateY(-30px); opacity: 0; } }
+/* === RESULTS === */
+#screen-results { justify-content: center; align-items: center; text-align: center; gap: 16px; }
+.results-stars { font-size: 48px; letter-spacing: 4px; }
+.results-score { font-size: 32px; font-weight: 800; color: var(--primary); }
+.results-detail { font-size: 15px; color: var(--text-light); }
+.results-xp { font-size: 18px; font-weight: 700; color: var(--success); }
+.results-btns { display: flex; gap: 12px; margin-top: 8px; }
+/* === STATS === */
+#screen-stats { gap: 16px; }
+.stat-card { background: var(--card); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); }
+.stat-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+.stat-card p { font-size: 14px; color: var(--text-light); }
+.stats-empty { text-align: center; color: var(--text-light); padding: 40px 0; }
+/* === ACHIEVEMENTS === */
+#screen-achievements { gap: 16px; }
+.achievements-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.achievement { background: var(--card); border-radius: var(--radius-sm); padding: 12px 8px; text-align: center; box-shadow: var(--shadow); transition: transform 0.15s; }
+.achievement:hover { transform: translateY(-2px); }
+.achievement--locked { opacity: 0.45; filter: grayscale(1); }
+.achievement-icon { font-size: 28px; }
+.achievement-name { font-size: 11px; font-weight: 700; margin-top: 4px; }
+.achievement-desc { font-size: 10px; color: var(--text-light); margin-top: 2px; }
+/* === SETTINGS === */
+#screen-settings { gap: 16px; }
+.setting-row { display: flex; align-items: center; justify-content: space-between; background: var(--card); padding: 14px 16px; border-radius: var(--radius); box-shadow: var(--shadow); }
+.setting-label { font-size: 14px; font-weight: 600; }
+.setting-value { display: flex; align-items: center; gap: 8px; }
+.setting-btn { width: 32px; height: 32px; border: 2px solid #e8e8e8; border-radius: 8px; background: var(--card); font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.setting-num { font-size: 16px; font-weight: 700; min-width: 28px; text-align: center; }
+.btn-danger { background: var(--error); color: #fff; border: none; padding: 12px 24px; border-radius: var(--radius); font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 16px; }
+/* === SCREEN HEADER === */
+.screen-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.screen-header h2 { font-size: 20px; font-weight: 800; }
+</style>
+</head>
+<body>
+<div id="app">
+<div id="toast-container"></div>
+<div id="level-up-overlay" class="hidden">
+  <div class="level-up-card">
+    <div class="level-up-icon">📖</div>
+    <div class="level-up-title" id="levelup-title"></div>
+    <div class="level-up-sub" id="levelup-sub"></div>
+    <button class="level-up-btn" id="levelup-btn">Weiter</button>
+  </div>
+</div>
+
+<div class="screen" id="screen-welcome">
+  <div class="welcome-icon">📖</div>
+  <div class="welcome-title">Wortreich</div>
+  <div class="welcome-sub">Deutsche Grammatik spielend lernen!</div>
+  <input type="text" class="welcome-input" id="name-input" placeholder="Dein Name" maxlength="20" autocomplete="off">
+  <button class="btn btn-primary btn-large" id="btn-start-welcome">Los geht's!</button>
+</div>
+
+<div class="screen hidden" id="screen-home">
+  <div class="home-header">
+    <h1>📖 Wortreich</h1>
+    <div class="home-greeting" id="home-greeting"></div>
+  </div>
+  <div class="card level-card">
+    <div class="level-badge" id="home-level-badge"></div>
+    <div class="level-title" id="home-level-title"></div>
+    <div class="xp-bar-container">
+      <div class="xp-bar-fill" id="home-xp-fill"></div>
+      <div class="xp-bar-text" id="home-xp-text"></div>
+    </div>
+  </div>
+  <div class="nav-grid">
+    <button class="nav-btn" id="nav-faelle">
+      <span class="nav-btn-icon">📝</span>
+      <span class="nav-btn-label">Deutsche F&auml;lle</span>
+      <span class="nav-btn-sub">Artikel &amp; Kasus</span>
+    </button>
+    <button class="nav-btn" id="nav-verben">
+      <span class="nav-btn-icon">🔀</span>
+      <span class="nav-btn-label">Unregelm. Verben</span>
+      <span class="nav-btn-sub">Verbformen &uuml;ben</span>
+    </button>
+    <button class="nav-btn" id="nav-stats">
+      <span class="nav-btn-icon">📊</span>
+      <span class="nav-btn-label">Statistiken</span>
+    </button>
+    <button class="nav-btn" id="nav-achievements">
+      <span class="nav-btn-icon">🏆</span>
+      <span class="nav-btn-label">Erfolge</span>
+    </button>
+    <button class="nav-btn" id="nav-settings" style="grid-column:1/-1;flex-direction:row;justify-content:center;padding:12px;gap:10px;">
+      <span class="nav-btn-icon">⚙️</span>
+      <span class="nav-btn-label">Einstellungen</span>
+    </button>
+  </div>
+</div>
+
+<div class="screen hidden" id="screen-mode-select">
+  <button class="btn-back" id="btn-back-mode">&larr; Zur&uuml;ck</button>
+  <div class="mode-title" id="mode-select-title"></div>
+  <div class="mode-desc" id="mode-select-desc"></div>
+  <div class="diff-grid">
+    <button class="diff-btn diff-btn--easy" id="diff-easy">
+      <span class="diff-icon">🟢</span>
+      <span class="diff-label"><span>Leicht</span><span id="diff-easy-sub">Einfacher Einstieg</span></span>
+    </button>
+    <button class="diff-btn diff-btn--medium" id="diff-medium">
+      <span class="diff-icon">🟡</span>
+      <span class="diff-label"><span>Mittel</span><span id="diff-medium-sub">Mehr Herausforderung</span></span>
+    </button>
+    <button class="diff-btn diff-btn--hard" id="diff-hard">
+      <span class="diff-icon">🔴</span>
+      <span class="diff-label"><span>Schwer</span><span id="diff-hard-sub">F&uuml;r Profis</span></span>
+    </button>
+  </div>
+</div>
+
+<div class="screen hidden" id="screen-countdown">
+  <div id="countdown-num"></div>
+</div>
+
+<div class="screen hidden" id="screen-game">
+  <div class="game-top">
+    <div class="game-progress">
+      <div class="game-progress-fill" id="game-progress-fill"></div>
+    </div>
+    <div class="game-progress-text" id="game-progress-text">0/10</div>
+    <div class="game-timer" id="game-timer">0:00</div>
+  </div>
+  <div class="game-question" id="game-question"></div>
+  <div class="game-answers" id="game-answers"></div>
+  <div class="feedback" id="game-feedback"></div>
+</div>
+
+<div class="screen hidden" id="screen-results">
+  <div class="results-stars" id="results-stars"></div>
+  <div class="results-score" id="results-score"></div>
+  <div class="results-detail" id="results-accuracy"></div>
+  <div class="results-xp" id="results-xp"></div>
+  <div class="results-btns">
+    <button class="btn btn-primary" id="btn-results-retry">Nochmal</button>
+    <button class="btn" id="btn-results-home" style="background:#e8e8e8;">Men&uuml;</button>
+  </div>
+</div>
+
+<div class="screen hidden" id="screen-stats">
+  <div class="screen-header">
+    <button class="btn-back" id="btn-back-stats">&larr; Zur&uuml;ck</button>
+    <h2>Statistiken</h2>
+  </div>
+  <div id="stats-content"></div>
+</div>
+
+<div class="screen hidden" id="screen-achievements">
+  <div class="screen-header">
+    <button class="btn-back" id="btn-back-achievements">&larr; Zur&uuml;ck</button>
+    <h2>Erfolge</h2>
+  </div>
+  <div class="achievements-grid" id="achievements-grid"></div>
+</div>
+
+<div class="screen hidden" id="screen-settings">
+  <div class="screen-header">
+    <button class="btn-back" id="btn-back-settings">&larr; Zur&uuml;ck</button>
+    <h2>Einstellungen</h2>
+  </div>
+  <div class="setting-row">
+    <span class="setting-label">Fragen pro Runde</span>
+    <div class="setting-value">
+      <button class="setting-btn" id="setting-q-minus">&minus;</button>
+      <span class="setting-num" id="setting-q-num">10</span>
+      <button class="setting-btn" id="setting-q-plus">+</button>
+    </div>
+  </div>
+  <div class="setting-row">
+    <span class="setting-label">Timer anzeigen</span>
+    <div class="setting-value">
+      <button class="setting-btn" id="setting-timer-toggle" style="width:auto;padding:0 12px;">Ja</button>
+    </div>
+  </div>
+  <button class="btn-danger" id="btn-reset">Alle Daten l&ouml;schen</button>
+</div>
+
+</div>
+<script>
+// === CASE DATA ===
+var CaseData = {
+  articles: {
+    nom: {m:'der',f:'die',n:'das'},
+    akk: {m:'den',f:'die',n:'das'},
+    dat: {m:'dem',f:'der',n:'dem'},
+    gen: {m:'des',f:'der',n:'des'}
+  },
+  caseNames: {nom:'Nominativ',akk:'Akkusativ',dat:'Dativ',gen:'Genitiv'},
+  // Fill article sentences: s=sentence with ___, a=correct article (lowercase), c=case
+  fillArticle: [
+    // Nominativ
+    {s:'___ Hund spielt im Garten.',a:'der',c:'nom'},
+    {s:'___ Katze schl\u00e4ft auf dem Sofa.',a:'die',c:'nom'},
+    {s:'___ Kind lacht laut.',a:'das',c:'nom'},
+    {s:'___ Ball rollt auf dem Boden.',a:'der',c:'nom'},
+    {s:'___ Blume bl\u00fcht wundersch\u00f6n.',a:'die',c:'nom'},
+    {s:'___ Buch liegt auf dem Tisch.',a:'das',c:'nom'},
+    {s:'___ Vogel singt ein Lied.',a:'der',c:'nom'},
+    {s:'___ Sonne scheint heute hell.',a:'die',c:'nom'},
+    {s:'___ Auto f\u00e4hrt sehr schnell.',a:'das',c:'nom'},
+    {s:'___ Apfel ist rot und s\u00fc\u00df.',a:'der',c:'nom'},
+    // Akkusativ
+    {s:'Ich sehe ___ Hund.',a:'den',c:'akk'},
+    {s:'Sie hat ___ Katze.',a:'die',c:'akk'},
+    {s:'Wir h\u00f6ren ___ Kind.',a:'das',c:'akk'},
+    {s:'Er wirft ___ Ball.',a:'den',c:'akk'},
+    {s:'Ich lese ___ Buch.',a:'das',c:'akk'},
+    {s:'Er kauft ___ Apfel.',a:'den',c:'akk'},
+    {s:'Sie \u00f6ffnet ___ T\u00fcr.',a:'die',c:'akk'},
+    {s:'Wir brauchen ___ Stuhl.',a:'den',c:'akk'},
+    {s:'Ich male ___ Haus.',a:'das',c:'akk'},
+    {s:'Er pfl\u00fcckt ___ Blume.',a:'die',c:'akk'},
+    // Dativ
+    {s:'Ich spiele mit ___ Hund.',a:'dem',c:'dat'},
+    {s:'Er geht zu ___ Schule.',a:'der',c:'dat'},
+    {s:'Wir fahren mit ___ Auto.',a:'dem',c:'dat'},
+    {s:'Sie hilft ___ Mann.',a:'dem',c:'dat'},
+    {s:'Er gibt ___ Frau ein Buch.',a:'der',c:'dat'},
+    {s:'Ich spiele mit ___ Ball.',a:'dem',c:'dat'},
+    {s:'Er geht zu ___ T\u00fcr.',a:'der',c:'dat'},
+    {s:'Wir spielen mit ___ Kind.',a:'dem',c:'dat'},
+    {s:'Das geh\u00f6rt ___ Katze.',a:'der',c:'dat'},
+    {s:'Sie kommt von ___ Baum.',a:'dem',c:'dat'},
+    // Genitiv
+    {s:'Das Fell ___ Hundes ist weich.',a:'des',c:'gen'},
+    {s:'Die Farbe ___ Blume ist rot.',a:'der',c:'gen'},
+    {s:'Der Name ___ Kindes ist Max.',a:'des',c:'gen'},
+    {s:'Das Dach ___ Hauses ist rot.',a:'des',c:'gen'},
+    {s:'Die Seiten ___ Buches sind alt.',a:'des',c:'gen'},
+    {s:'Die T\u00fcr ___ Schule ist offen.',a:'der',c:'gen'},
+    {s:'Die Bl\u00e4tter ___ Baumes sind gr\u00fcn.',a:'des',c:'gen'},
+    {s:'Die Farbe ___ Autos gef\u00e4llt mir.',a:'des',c:'gen'}
+  ],
+  // Identify case sentences: s=full sentence, mark=text to highlight, a=case key
+  identifyCase: [
+    {s:'Der Hund spielt im Garten.',mark:'Der Hund',a:'nom'},
+    {s:'Die Katze ist m\u00fcde.',mark:'Die Katze',a:'nom'},
+    {s:'Das Kind singt ein Lied.',mark:'Das Kind',a:'nom'},
+    {s:'Der Ball liegt im Flur.',mark:'Der Ball',a:'nom'},
+    {s:'Ich sehe den Mann.',mark:'den Mann',a:'akk'},
+    {s:'Sie findet die Tasche.',mark:'die Tasche',a:'akk'},
+    {s:'Er liest das Buch.',mark:'das Buch',a:'akk'},
+    {s:'Wir kaufen den Apfel.',mark:'den Apfel',a:'akk'},
+    {s:'Ich helfe dem Mann.',mark:'dem Mann',a:'dat'},
+    {s:'Sie gibt der Frau Wasser.',mark:'der Frau',a:'dat'},
+    {s:'Er dankt dem Kind.',mark:'dem Kind',a:'dat'},
+    {s:'Wir spielen mit dem Hund.',mark:'dem Hund',a:'dat'},
+    {s:'Das Fell des Hundes ist weich.',mark:'des Hundes',a:'gen'},
+    {s:'Die Farbe der Blume ist rot.',mark:'der Blume',a:'gen'},
+    {s:'Die T\u00fcr des Hauses ist offen.',mark:'des Hauses',a:'gen'},
+    {s:'Der Name des Kindes ist sch\u00f6n.',mark:'des Kindes',a:'gen'}
+  ],
+  // Prepositions: p=preposition, c=case key
+  prepositions: [
+    {p:'durch',c:'akk'},{p:'f\u00fcr',c:'akk'},{p:'gegen',c:'akk'},{p:'ohne',c:'akk'},{p:'um',c:'akk'},
+    {p:'aus',c:'dat'},{p:'bei',c:'dat'},{p:'mit',c:'dat'},{p:'nach',c:'dat'},{p:'seit',c:'dat'},{p:'von',c:'dat'},{p:'zu',c:'dat'},
+    {p:'wegen',c:'gen'},{p:'trotz',c:'gen'},{p:'w\u00e4hrend',c:'gen'},{p:'anstatt',c:'gen'}
+  ]
+};
+
+// === VERB DATA ===
+var VerbData = {
+  // [infinitiv, pr\u00e4teritum, partizipII, hilfsverb]
+  easy: [
+    ['gehen','ging','gegangen','sein'],
+    ['kommen','kam','gekommen','sein'],
+    ['sehen','sah','gesehen','haben'],
+    ['essen','a\u00df','gegessen','haben'],
+    ['trinken','trank','getrunken','haben'],
+    ['geben','gab','gegeben','haben'],
+    ['nehmen','nahm','genommen','haben'],
+    ['lesen','las','gelesen','haben'],
+    ['schreiben','schrieb','geschrieben','haben'],
+    ['fahren','fuhr','gefahren','sein'],
+    ['laufen','lief','gelaufen','sein'],
+    ['finden','fand','gefunden','haben'],
+    ['sprechen','sprach','gesprochen','haben'],
+    ['schlafen','schlief','geschlafen','haben'],
+    ['stehen','stand','gestanden','haben']
+  ],
+  medium: [
+    ['tragen','trug','getragen','haben'],
+    ['fallen','fiel','gefallen','sein'],
+    ['halten','hielt','gehalten','haben'],
+    ['rufen','rief','gerufen','haben'],
+    ['ziehen','zog','gezogen','haben'],
+    ['fliegen','flog','geflogen','sein'],
+    ['schwimmen','schwamm','geschwommen','sein'],
+    ['helfen','half','geholfen','haben'],
+    ['werfen','warf','geworfen','haben'],
+    ['brechen','brach','gebrochen','haben'],
+    ['singen','sang','gesungen','haben'],
+    ['beginnen','begann','begonnen','haben'],
+    ['gewinnen','gewann','gewonnen','haben'],
+    ['waschen','wusch','gewaschen','haben'],
+    ['treffen','traf','getroffen','haben']
+  ],
+  hard: [
+    ['bieten','bot','geboten','haben'],
+    ['bitten','bat','gebeten','haben'],
+    ['bleiben','blieb','geblieben','sein'],
+    ['denken','dachte','gedacht','haben'],
+    ['empfehlen','empfahl','empfohlen','haben'],
+    ['erschrecken','erschrak','erschrocken','sein'],
+    ['frieren','fror','gefroren','haben'],
+    ['greifen','griff','gegriffen','haben'],
+    ['heben','hob','gehoben','haben'],
+    ['leiden','litt','gelitten','haben'],
+    ['l\u00fcgen','log','gelogen','haben'],
+    ['messen','ma\u00df','gemessen','haben'],
+    ['raten','riet','geraten','haben'],
+    ['rei\u00dfen','riss','gerissen','haben'],
+    ['riechen','roch','gerochen','haben'],
+    ['schie\u00dfen','schoss','geschossen','haben'],
+    ['schneiden','schnitt','geschnitten','haben'],
+    ['steigen','stieg','gestiegen','sein'],
+    ['streiten','stritt','gestritten','haben'],
+    ['zwingen','zwang','gezwungen','haben']
+  ]
+};
+
+// === CONSTANTS ===
+var LEVELS = [
+  {xp:0,title:'Sprach-Anf\u00e4nger'},{xp:50,title:'Wort-Entdecker'},{xp:120,title:'Satz-Bauer'},
+  {xp:200,title:'Grammatik-Sch\u00fcler'},{xp:300,title:'Sprach-Kenner'},{xp:420,title:'Wort-Akrobat'},
+  {xp:560,title:'Satz-K\u00fcnstler'},{xp:720,title:'Grammatik-Profi'},{xp:900,title:'Sprach-Virtuose'},
+  {xp:1100,title:'Sprach-Meister'}
+];
+
+var ACHIEVEMENT_DEFS = [
+  {id:'erste-worte',name:'Erste W\u00f6rter',desc:'Erste Runde gespielt',icon:'\uD83D\uDCDD'},
+  {id:'perfekt',name:'Perfektionist',desc:'100% in einer Runde',icon:'\uD83D\uDC8E'},
+  {id:'blitz',name:'Blitzantwort',desc:'Unter 2s geantwortet',icon:'\u26A1'},
+  {id:'serie-5',name:'5er-Serie',desc:'5 richtige in Folge',icon:'\uD83D\uDD25'},
+  {id:'serie-10',name:'10er-Serie',desc:'10 richtige in Folge',icon:'\uD83D\uDCAB'},
+  {id:'runden-10',name:'\u00dcbungsheld',desc:'10 Runden gespielt',icon:'\uD83C\uDFC3'},
+  {id:'runden-25',name:'Ausdauer-Star',desc:'25 Runden gespielt',icon:'\uD83C\uDF1F'},
+  {id:'fall-kenner',name:'Fall-Kenner',desc:'90%+ bei F\u00e4lle',icon:'\uD83C\uDFAF'},
+  {id:'verb-kenner',name:'Verb-Kenner',desc:'90%+ bei Verben',icon:'\uD83D\uDCD6'},
+  {id:'alle-modi',name:'Allrounder',desc:'Beide Modi gespielt',icon:'\uD83C\uDFC6'},
+  {id:'level-5',name:'Aufsteiger',desc:'Level 5 erreicht',icon:'\uD83D\uDCC8'},
+  {id:'punkte-1000',name:'Punkte-Sammler',desc:'1000 Punkte total',icon:'\uD83D\uDCB0'},
+  {id:'tempo',name:'Tempomacher',desc:'Schnitt unter 3s',icon:'\uD83D\uDE80'},
+  {id:'grammatik-held',name:'Grammatik-Held',desc:'50 Runden gespielt',icon:'\uD83E\uDDB8'},
+  {id:'dativ-meister',name:'Dativ-Meister',desc:'90%+ bei F\u00e4lle (schwer)',icon:'\uD83D\uDC51'},
+  {id:'verb-sammler',name:'Verb-Sammler',desc:'Alle Schwierigkeiten bei Verben',icon:'\uD83D\uDCDA'},
+  {id:'sprach-genie',name:'Sprach-Genie',desc:'Level 10 erreicht',icon:'\uD83E\uDDE0'},
+  {id:'ohne-fehler',name:'Fehlerfrei',desc:'10 Runden ohne Fehler',icon:'\u2728'}
+];
+
+var ALL_ARTICLES = ['der','die','das','den','dem','des'];
+
+// === STORAGE ===
+var Storage = {
+  KEY: 'wortreich',
+  _default: function() {
+    return {version:1, player:null, sessions:[], achievements:{}, settings:{questionsPerRound:10, showTimer:true}};
+  },
+  load: function() {
+    try {
+      var raw = localStorage.getItem(this.KEY);
+      if (!raw) return this._default();
+      var d = JSON.parse(raw);
+      if (!d.settings) d.settings = this._default().settings;
+      if (!d.achievements) d.achievements = {};
+      if (!d.sessions) d.sessions = [];
+      return d;
+    } catch(e) { return this._default(); }
+  },
+  save: function(d) {
+    try {
+      if (d.sessions.length > 100) d.sessions = d.sessions.slice(-100);
+      localStorage.setItem(this.KEY, JSON.stringify(d));
+    } catch(e) {}
+  },
+  reset: function() { localStorage.removeItem(this.KEY); }
+};
+
+var data = Storage.load();
+
+// === SCORING ===
+var Scoring = {
+  calc: function(correct, timeMs, streak) {
+    if (!correct) return 0;
+    var base = 10;
+    var s = timeMs / 1000;
+    if (s < 3) base += 10; else if (s < 5) base += 5;
+    var mult = 1;
+    if (streak >= 10) mult = 3; else if (streak >= 5) mult = 2; else if (streak >= 3) mult = 1.5;
+    return Math.round(base * mult);
+  },
+  stars: function(accuracy, avgTime) {
+    if (accuracy >= 0.9 && avgTime < 8) return 3;
+    if (accuracy >= 0.75) return 2;
+    if (accuracy >= 0.5) return 1;
+    return 0;
+  },
+  getLevel: function(xp) {
+    for (var i = LEVELS.length - 1; i >= 0; i--) if (xp >= LEVELS[i].xp) return i;
+    return 0;
+  }
+};
+
+// === ACHIEVEMENTS ===
+var Achievements = {
+  checkAll: function(result) {
+    var unlocked = [];
+    for (var di = 0; di < ACHIEVEMENT_DEFS.length; di++) {
+      var def = ACHIEVEMENT_DEFS[di];
+      if (data.achievements[def.id]) continue;
+      var ok = false;
+      switch (def.id) {
+        case 'erste-worte': ok = data.sessions.length >= 1; break;
+        case 'perfekt': ok = result.accuracy >= 1; break;
+        case 'blitz': ok = result.results.some(function(r){return r.correct && r.timeMs < 2000;}); break;
+        case 'serie-5': ok = result.maxStreak >= 5; break;
+        case 'serie-10': ok = result.maxStreak >= 10; break;
+        case 'runden-10': ok = data.sessions.length >= 10; break;
+        case 'runden-25': ok = data.sessions.length >= 25; break;
+        case 'fall-kenner': ok = result.mode === 'faelle' && result.accuracy >= 0.9; break;
+        case 'verb-kenner': ok = result.mode === 'verben' && result.accuracy >= 0.9; break;
+        case 'alle-modi': ok = new Set(data.sessions.map(function(s){return s.mode;})).size >= 2; break;
+        case 'level-5': ok = Scoring.getLevel(data.player.xp) >= 4; break;
+        case 'punkte-1000': ok = data.player.totalPoints >= 1000; break;
+        case 'tempo': ok = result.avgTime < 3; break;
+        case 'grammatik-held': ok = data.sessions.length >= 50; break;
+        case 'dativ-meister': ok = result.mode === 'faelle' && result.difficulty === 'hard' && result.accuracy >= 0.9; break;
+        case 'verb-sammler':
+          var verbSess = data.sessions.filter(function(s){return s.mode === 'verben';});
+          ok = new Set(verbSess.map(function(s){return s.difficulty;})).size >= 3;
+          break;
+        case 'sprach-genie': ok = Scoring.getLevel(data.player.xp) >= 9; break;
+        case 'ohne-fehler':
+          var perfectCount = data.sessions.filter(function(s){return s.accuracy >= 1;}).length;
+          ok = perfectCount >= 10;
+          break;
+      }
+      if (ok) { data.achievements[def.id] = Date.now(); unlocked.push(def); }
+    }
+    return unlocked;
+  }
+};
+
+// === QUESTION GENERATOR ===
+var QuestionGen = {
+  _shuffle: function(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+    }
+    return arr;
+  },
+
+  generateFaelle: function(difficulty, count) {
+    var questions = [];
+    var cases = difficulty === 'easy' ? ['nom','akk'] :
+                difficulty === 'medium' ? ['nom','akk','dat'] : ['nom','akk','dat','gen'];
+    var numOpts = difficulty === 'easy' ? 2 : difficulty === 'medium' ? 3 : 4;
+    for (var i = 0; i < count; i++) {
+      var rand = Math.random();
+      var type;
+      if (difficulty === 'easy') {
+        type = 'fill';
+      } else if (difficulty === 'medium') {
+        type = rand < 0.7 ? 'fill' : 'identify';
+      } else {
+        type = rand < 0.5 ? 'fill' : rand < 0.75 ? 'identify' : 'prep';
+      }
+      if (type === 'fill') questions.push(this._genFillArticle(cases, numOpts));
+      else if (type === 'identify') questions.push(this._genIdentifyCase(cases, numOpts));
+      else questions.push(this._genPrepCase(cases));
+    }
+    return questions;
+  },
+
+  _genFillArticle: function(cases, numOpts) {
+    var caseKey = cases[Math.floor(Math.random() * cases.length)];
+    var pool = CaseData.fillArticle.filter(function(s){return s.c === caseKey;});
+    var item = pool[Math.floor(Math.random() * pool.length)];
+    var correct = item.a;
+    var distractors = ALL_ARTICLES.filter(function(a){return a !== correct;});
+    this._shuffle(distractors);
+    var options = [correct].concat(distractors.slice(0, numOpts - 1));
+    this._shuffle(options);
+    return {type:'fill', sentence:item.s, answer:correct, options:options, correctIdx:options.indexOf(correct)};
+  },
+
+  _genIdentifyCase: function(cases, numOpts) {
+    var caseKey = cases[Math.floor(Math.random() * cases.length)];
+    var pool = CaseData.identifyCase.filter(function(s){return s.a === caseKey;});
+    var item = pool[Math.floor(Math.random() * pool.length)];
+    var correct = CaseData.caseNames[caseKey];
+    var available = cases.map(function(c){return CaseData.caseNames[c];});
+    var distractors = available.filter(function(c){return c !== correct;});
+    this._shuffle(distractors);
+    var options = [correct].concat(distractors.slice(0, numOpts - 1));
+    this._shuffle(options);
+    return {type:'identify', sentence:item.s, mark:item.mark, answer:correct, options:options, correctIdx:options.indexOf(correct)};
+  },
+
+  _genPrepCase: function(cases) {
+    var pool = CaseData.prepositions.filter(function(p){return cases.indexOf(p.c) >= 0;});
+    var item = pool[Math.floor(Math.random() * pool.length)];
+    var correct = CaseData.caseNames[item.c];
+    var allNames = cases.map(function(c){return CaseData.caseNames[c];});
+    var distractors = allNames.filter(function(c){return c !== correct;});
+    this._shuffle(distractors);
+    var options = [correct].concat(distractors.slice(0, 3));
+    this._shuffle(options);
+    return {type:'prep', preposition:item.p, answer:correct, options:options, correctIdx:options.indexOf(correct)};
+  },
+
+  generateVerben: function(difficulty, count) {
+    var pool = VerbData.easy.slice();
+    if (difficulty !== 'easy') pool = pool.concat(VerbData.medium);
+    if (difficulty === 'hard') pool = pool.concat(VerbData.hard);
+    var questions = [];
+    var numOpts = difficulty === 'easy' ? 3 : 4;
+    var showHilfs = difficulty !== 'hard';
+    for (var i = 0; i < count; i++) {
+      var rand = Math.random();
+      var verb = pool[Math.floor(Math.random() * pool.length)];
+      if (difficulty === 'easy' || rand < 0.7) {
+        questions.push(this._genFillBlank(verb, pool, difficulty, numOpts, showHilfs));
+      } else {
+        questions.push(this._genMatchTriple(verb, pool, numOpts));
+      }
+    }
+    return questions;
+  },
+
+  _genFillBlank: function(verb, pool, difficulty, numOpts, showHilfs) {
+    var blankPos = difficulty === 'easy' ? 2 : Math.floor(Math.random() * 3);
+    var forms = [verb[0], verb[1], verb[2]];
+    var answer = forms[blankPos];
+    forms[blankPos] = null;
+    var distractors = this._verbDistractors(verb, blankPos, pool, numOpts - 1);
+    var options = [answer].concat(distractors);
+    this._shuffle(options);
+    return {type:'fill-blank', forms:forms, blankPos:blankPos, hilfsverb:showHilfs ? verb[3] : null,
+            answer:answer, options:options, correctIdx:options.indexOf(answer)};
+  },
+
+  _verbDistractors: function(verb, blankPos, pool, count) {
+    var distractors = [];
+    // Add regularized wrong form
+    var wrong = this._wrongRegular(verb[0], blankPos);
+    if (wrong && wrong !== verb[blankPos] && distractors.indexOf(wrong) < 0) distractors.push(wrong);
+    // Add forms from other verbs
+    var others = pool.filter(function(v){return v[0] !== verb[0];});
+    this._shuffle(others);
+    for (var i = 0; i < others.length && distractors.length < count; i++) {
+      var form = others[i][blankPos];
+      if (form !== verb[blankPos] && distractors.indexOf(form) < 0) distractors.push(form);
+    }
+    return distractors.slice(0, count);
+  },
+
+  _wrongRegular: function(infinitiv, pos) {
+    var stem = infinitiv.replace(/en$/, '').replace(/ern$/, 'er').replace(/eln$/, 'el');
+    if (pos === 1) return stem + 'te';
+    if (pos === 2) return 'ge' + stem + 't';
+    return null;
+  },
+
+  _genMatchTriple: function(verb, pool, numOpts) {
+    var options = [{praet:verb[1], part:verb[2]}];
+    // Add regularized wrong
+    var wrongP = this._wrongRegular(verb[0], 1);
+    var wrongPP = this._wrongRegular(verb[0], 2);
+    if (wrongP && wrongPP && wrongP !== verb[1]) options.push({praet:wrongP, part:wrongPP});
+    // Add from other verbs
+    var others = pool.filter(function(v){return v[0] !== verb[0];});
+    this._shuffle(others);
+    for (var i = 0; i < others.length && options.length < numOpts; i++) {
+      options.push({praet:others[i][1], part:others[i][2]});
+    }
+    options = options.slice(0, numOpts);
+    this._shuffle(options);
+    var correctIdx = -1;
+    for (var j = 0; j < options.length; j++) {
+      if (options[j].praet === verb[1] && options[j].part === verb[2]) { correctIdx = j; break; }
+    }
+    return {type:'match', infinitiv:verb[0], options:options, correctIdx:correctIdx};
+  }
+};
+
+// === GAME ENGINE ===
+var GameEngine = {
+  mode: null, difficulty: null, pendingMode: null,
+  queue: [], current: null, results: [],
+  streak: 0, maxStreak: 0, totalPoints: 0,
+  questionStart: 0, timerInterval: null, timerStart: 0,
+  locked: false, sessionResult: null, originalCount: 0,
+
+  start: function(mode, difficulty) {
+    this.mode = mode;
+    this.difficulty = difficulty;
+    this.results = [];
+    this.streak = 0;
+    this.maxStreak = 0;
+    this.totalPoints = 0;
+    this.locked = false;
+    this.sessionResult = null;
+    var count = data.settings.questionsPerRound || 10;
+    if (mode === 'faelle') this.queue = QuestionGen.generateFaelle(difficulty, count);
+    else this.queue = QuestionGen.generateVerben(difficulty, count);
+    this.originalCount = this.queue.length;
+    this._runCountdown();
+  },
+
+  _runCountdown: function() {
+    UI.show('countdown');
+    var nums = ['3','2','1','LOS!'];
+    var i = 0;
+    var el = UI.$('countdown-num');
+    var self = this;
+    var tick = function() {
+      el.textContent = nums[i];
+      el.style.animation = 'none';
+      el.offsetHeight;
+      el.style.animation = 'countPop 0.6s ease';
+      i++;
+      if (i < nums.length) setTimeout(tick, 700);
+      else setTimeout(function(){UI.show('game'); self._startTimer(); self._nextQuestion();}, 500);
+    };
+    tick();
+  },
+
+  _startTimer: function() {
+    this.timerStart = Date.now();
+    var self = this;
+    if (data.settings.showTimer) {
+      UI.$('game-timer').textContent = '0:00';
+      this.timerInterval = setInterval(function() {
+        var s = Math.floor((Date.now() - self.timerStart) / 1000);
+        UI.$('game-timer').textContent = Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+      }, 1000);
+    } else {
+      UI.$('game-timer').textContent = '';
+    }
+  },
+
+  _nextQuestion: function() {
+    if (this.queue.length === 0) return this._endSession();
+    this.current = this.queue.shift();
+    this.questionStart = Date.now();
+    this.locked = false;
+    this._renderQuestion();
+    var done = this.originalCount - this.queue.length - 1;
+    UI.$('game-progress-fill').style.width = (done / this.originalCount * 100) + '%';
+    UI.$('game-progress-text').textContent = (done+1) + ' / ' + this.originalCount;
+  },
+
+  _renderQuestion: function() {
+    var area = UI.$('game-question');
+    var answers = UI.$('game-answers');
+    area.innerHTML = '';
+    answers.innerHTML = '';
+    var self = this;
+    var q = this.current;
+
+    if (q.type === 'fill') {
+      // Fill article question
+      var lbl = document.createElement('div');
+      lbl.className = 'question-label';
+      lbl.textContent = 'Setze den richtigen Artikel ein:';
+      area.appendChild(lbl);
+      var sent = document.createElement('div');
+      sent.className = 'sentence-display';
+      sent.innerHTML = q.sentence.replace('___', '<span class="blank-slot">?</span>');
+      area.appendChild(sent);
+      q.options.forEach(function(opt, idx) {
+        var btn = document.createElement('button');
+        btn.className = 'answer-pill';
+        btn.textContent = opt;
+        btn.onclick = function(){self.answer(idx);};
+        answers.appendChild(btn);
+      });
+
+    } else if (q.type === 'identify') {
+      // Identify case question
+      var lbl2 = document.createElement('div');
+      lbl2.className = 'question-label';
+      lbl2.textContent = 'Welcher Fall ist das?';
+      area.appendChild(lbl2);
+      var sent2 = document.createElement('div');
+      sent2.className = 'sentence-display';
+      sent2.innerHTML = q.sentence.replace(q.mark, '<span class="highlight-mark">' + q.mark + '</span>');
+      area.appendChild(sent2);
+      q.options.forEach(function(opt, idx) {
+        var btn = document.createElement('button');
+        btn.className = 'answer-pill';
+        btn.textContent = opt;
+        btn.onclick = function(){self.answer(idx);};
+        answers.appendChild(btn);
+      });
+
+    } else if (q.type === 'prep') {
+      // Preposition case question
+      var lbl3 = document.createElement('div');
+      lbl3.className = 'question-label';
+      lbl3.textContent = 'Welcher Fall kommt nach:';
+      area.appendChild(lbl3);
+      var prep = document.createElement('div');
+      prep.className = 'prep-display';
+      prep.textContent = '\u00bb' + q.preposition + '\u00ab';
+      area.appendChild(prep);
+      q.options.forEach(function(opt, idx) {
+        var btn = document.createElement('button');
+        btn.className = 'answer-pill';
+        btn.textContent = opt;
+        btn.onclick = function(){self.answer(idx);};
+        answers.appendChild(btn);
+      });
+
+    } else if (q.type === 'fill-blank') {
+      // Verb fill blank
+      var lbl4 = document.createElement('div');
+      lbl4.className = 'question-label';
+      lbl4.textContent = 'Erg\u00e4nze die fehlende Form:';
+      area.appendChild(lbl4);
+      var chain = document.createElement('div');
+      chain.className = 'verb-chain';
+      var labels = ['Infinitiv', 'Pr\u00e4teritum', 'Partizip II'];
+      for (var fi = 0; fi < 3; fi++) {
+        if (fi > 0) {
+          var arrow = document.createElement('span');
+          arrow.className = 'verb-arrow';
+          arrow.textContent = '\u2192';
+          chain.appendChild(arrow);
+        }
+        var card = document.createElement('div');
+        if (q.forms[fi] === null) {
+          card.className = 'verb-card verb-blank';
+          card.textContent = '?';
+        } else {
+          card.className = 'verb-card';
+          card.textContent = q.forms[fi];
+        }
+        chain.appendChild(card);
+      }
+      area.appendChild(chain);
+      if (q.hilfsverb && q.blankPos === 2) {
+        var hint = document.createElement('div');
+        hint.className = 'hilfsverb-hint';
+        hint.textContent = 'Hilfsverb: ' + q.hilfsverb;
+        area.appendChild(hint);
+      }
+      q.options.forEach(function(opt, idx) {
+        var btn = document.createElement('button');
+        btn.className = 'answer-pill';
+        btn.textContent = opt;
+        btn.onclick = function(){self.answer(idx);};
+        answers.appendChild(btn);
+      });
+
+    } else if (q.type === 'match') {
+      // Match triple
+      var lbl5 = document.createElement('div');
+      lbl5.className = 'question-label';
+      lbl5.textContent = 'Welche Formen geh\u00f6ren zu:';
+      area.appendChild(lbl5);
+      var inf = document.createElement('div');
+      inf.className = 'prep-display';
+      inf.textContent = q.infinitiv;
+      area.appendChild(inf);
+      q.options.forEach(function(opt, idx) {
+        var btn = document.createElement('button');
+        btn.className = 'answer-pill answer-pill--match';
+        btn.textContent = opt.praet + ' \u2013 ' + opt.part;
+        btn.onclick = function(){self.answer(idx);};
+        answers.appendChild(btn);
+      });
+    }
+  },
+
+  answer: function(value) {
+    if (this.locked) return;
+    this.locked = true;
+    var timeMs = Date.now() - this.questionStart;
+    var correct = value === this.current.correctIdx;
+    if (correct) {
+      this.streak++;
+      if (this.streak > this.maxStreak) this.maxStreak = this.streak;
+      var pts = Scoring.calc(true, timeMs, this.streak);
+      this.totalPoints += pts;
+      this._showFeedback(true, pts);
+    } else {
+      this.streak = 0;
+      this._showFeedback(false, 0);
+    }
+    this.results.push({correct:correct, timeMs:timeMs});
+    var self = this;
+    setTimeout(function(){self._nextQuestion();}, correct ? 800 : 1500);
+  },
+
+  _showFeedback: function(correct, pts) {
+    var fb = UI.$('game-feedback');
+    fb.className = 'feedback ' + (correct ? 'feedback--correct' : 'feedback--wrong');
+    fb.textContent = correct ? '+' + pts : '\u2717';
+    fb.style.animation = 'none';
+    fb.offsetHeight;
+    fb.style.animation = 'feedbackPop 0.6s ease';
+    setTimeout(function(){fb.className = 'feedback';}, correct ? 700 : 1400);
+  },
+
+  _endSession: function() {
+    clearInterval(this.timerInterval);
+    var correctCount = this.results.filter(function(r){return r.correct;}).length;
+    var accuracy = this.results.length > 0 ? correctCount / this.results.length : 0;
+    var avgTime = this.results.reduce(function(a,r){return a+r.timeMs;},0) / this.results.length / 1000;
+    var stars = Scoring.stars(accuracy, avgTime);
+    var earnedXp = Math.round(this.totalPoints / 10);
+    var oldLevel = Scoring.getLevel(data.player.xp);
+    data.player.xp += earnedXp;
+    data.player.totalPoints += this.totalPoints;
+    var newLevel = Scoring.getLevel(data.player.xp);
+    data.sessions.push({mode:this.mode, difficulty:this.difficulty, accuracy:accuracy, totalPoints:this.totalPoints, stars:stars, date:Date.now()});
+    this.sessionResult = {mode:this.mode, difficulty:this.difficulty, accuracy:accuracy, totalPoints:this.totalPoints, stars:stars, earnedXp:earnedXp, maxStreak:this.maxStreak, avgTime:avgTime, results:this.results};
+    var unlocked = Achievements.checkAll(this.sessionResult);
+    Storage.save(data);
+    UI.show('results');
+    for (var ai = 0; ai < unlocked.length; ai++) {
+      (function(a){setTimeout(function(){UI.toast(a.icon + ' ' + a.name + ' freigeschaltet!');}, 500);})(unlocked[ai]);
+    }
+    if (newLevel > oldLevel) {
+      setTimeout(function() {
+        UI.$('levelup-title').textContent = 'Level ' + (newLevel+1) + '!';
+        UI.$('levelup-sub').textContent = LEVELS[newLevel].title;
+        UI.$('level-up-overlay').classList.remove('hidden');
+      }, 1000);
+    }
+  }
+};
+
+// === UI ===
+var UI = {
+  $: function(id) { return document.getElementById(id); },
+  screens: ['welcome','home','mode-select','countdown','game','results','stats','achievements','settings'],
+  show: function(name) {
+    for (var i = 0; i < this.screens.length; i++) {
+      document.getElementById('screen-' + this.screens[i]).classList.toggle('hidden', this.screens[i] !== name);
+    }
+    var fn = 'render_' + name.replace(/-/g, '_');
+    if (this[fn]) this[fn]();
+  },
+  toast: function(msg, icon) {
+    var el = document.createElement('div');
+    el.className = 'toast';
+    el.innerHTML = '<span class="toast-icon">' + (icon||'\u2728') + '</span><span>' + msg + '</span>';
+    this.$('toast-container').appendChild(el);
+    setTimeout(function(){el.classList.add('toast--fade'); setTimeout(function(){el.remove();}, 300);}, 2500);
+  },
+  render_home: function() {
+    var p = data.player;
+    this.$('home-greeting').textContent = 'Hallo, ' + p.name + '!';
+    var lvl = Scoring.getLevel(p.xp);
+    this.$('home-level-badge').textContent = 'Level ' + (lvl+1);
+    this.$('home-level-title').textContent = LEVELS[lvl].title;
+    var nextXp = lvl < LEVELS.length - 1 ? LEVELS[lvl+1].xp : LEVELS[lvl].xp;
+    var prevXp = LEVELS[lvl].xp;
+    var pct = lvl < LEVELS.length - 1 ? ((p.xp - prevXp) / (nextXp - prevXp)) * 100 : 100;
+    this.$('home-xp-fill').style.width = pct + '%';
+    this.$('home-xp-text').textContent = p.xp + ' / ' + nextXp + ' XP';
+  },
+  render_mode_select: function() {
+    var titles = {faelle:'Deutsche F\u00e4lle', verben:'Unregelm\u00e4\u00dfige Verben'};
+    var descs = {
+      faelle:'\u00dcbe Nominativ, Akkusativ, Dativ und Genitiv mit Artikeln und S\u00e4tzen.',
+      verben:'Lerne die wichtigsten unregelm\u00e4\u00dfigen Verbformen.'
+    };
+    var mode = GameEngine.pendingMode;
+    this.$('mode-select-title').textContent = titles[mode] || mode;
+    this.$('mode-select-desc').textContent = descs[mode] || '';
+    // Update difficulty descriptions per mode
+    if (mode === 'faelle') {
+      this.$('diff-easy-sub').textContent = 'Nominativ & Akkusativ';
+      this.$('diff-medium-sub').textContent = '+ Dativ, gemischte Aufgaben';
+      this.$('diff-hard-sub').textContent = 'Alle 4 F\u00e4lle + Pr\u00e4positionen';
+    } else {
+      this.$('diff-easy-sub').textContent = '15 h\u00e4ufige Verben';
+      this.$('diff-medium-sub').textContent = '30 Verben, alle Formen';
+      this.$('diff-hard-sub').textContent = '50 Verben, ohne Hilfsverb';
+    }
+  },
+  render_results: function() {
+    var r = GameEngine.sessionResult;
+    if (!r) return;
+    this.$('results-stars').textContent = [0,1,2].map(function(i){return i < r.stars ? '\u2B50' : '\u2606';}).join('');
+    this.$('results-score').textContent = r.totalPoints + ' Punkte';
+    this.$('results-accuracy').textContent = Math.round(r.accuracy * 100) + '% richtig';
+    this.$('results-xp').textContent = '+' + r.earnedXp + ' XP';
+  },
+  render_stats: function() {
+    var container = this.$('stats-content');
+    var sessions = data.sessions;
+    if (sessions.length === 0) {
+      container.innerHTML = '<p class="stats-empty">Noch keine Statistiken. Spiel eine Runde!</p>';
+      return;
+    }
+    var byMode = {};
+    for (var i = 0; i < sessions.length; i++) {
+      var s = sessions[i];
+      if (!byMode[s.mode]) byMode[s.mode] = [];
+      byMode[s.mode].push(s);
+    }
+    var modeNames = {faelle:'Deutsche F\u00e4lle', verben:'Unregelm\u00e4\u00dfige Verben'};
+    var html = '<div class="stat-card"><h3>\u00dcbersicht</h3><p>' + sessions.length + ' Runden gespielt \u00b7 ' + data.player.totalPoints + ' Punkte</p></div>';
+    for (var mode in byMode) {
+      var sess = byMode[mode];
+      var avgAcc = sess.reduce(function(a,s){return a+s.accuracy;}, 0) / sess.length;
+      var bestStars = Math.max.apply(null, sess.map(function(s){return s.stars;}));
+      html += '<div class="stat-card"><h3>' + (modeNames[mode]||mode) + '</h3>';
+      html += '<p>' + sess.length + ' Runden \u00b7 ' + Math.round(avgAcc*100) + '% Schnitt \u00b7 ' + bestStars + '\u2B50 Bestleistung</p></div>';
+    }
+    container.innerHTML = html;
+  },
+  render_achievements: function() {
+    var container = this.$('achievements-grid');
+    var html = '';
+    for (var i = 0; i < ACHIEVEMENT_DEFS.length; i++) {
+      var def = ACHIEVEMENT_DEFS[i];
+      var unlocked = data.achievements[def.id];
+      html += '<div class="achievement ' + (unlocked ? '' : 'achievement--locked') + '">';
+      html += '<div class="achievement-icon">' + def.icon + '</div>';
+      html += '<div class="achievement-name">' + def.name + '</div>';
+      html += '<div class="achievement-desc">' + def.desc + '</div></div>';
+    }
+    container.innerHTML = html;
+  },
+  render_settings: function() {
+    this.$('setting-q-num').textContent = data.settings.questionsPerRound;
+    this.$('setting-timer-toggle').textContent = data.settings.showTimer ? 'Ja' : 'Nein';
+  }
+};
+
+// === APP ===
+var App = {
+  init: function() {
+    data = Storage.load();
+    this._bindEvents();
+    if (data.player) UI.show('home');
+    else UI.show('welcome');
+  },
+  _bindEvents: function() {
+    // Welcome
+    UI.$('btn-start-welcome').onclick = function() {
+      var name = UI.$('name-input').value.trim();
+      if (!name) return;
+      data.player = {name:name, xp:0, totalPoints:0};
+      Storage.save(data);
+      UI.show('home');
+    };
+    UI.$('name-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') UI.$('btn-start-welcome').click();
+    });
+    // Home nav
+    UI.$('nav-faelle').onclick = function(){GameEngine.pendingMode='faelle'; UI.show('mode-select');};
+    UI.$('nav-verben').onclick = function(){GameEngine.pendingMode='verben'; UI.show('mode-select');};
+    UI.$('nav-stats').onclick = function(){UI.show('stats');};
+    UI.$('nav-achievements').onclick = function(){UI.show('achievements');};
+    UI.$('nav-settings').onclick = function(){UI.show('settings');};
+    // Difficulty select
+    UI.$('diff-easy').onclick = function(){GameEngine.start(GameEngine.pendingMode,'easy');};
+    UI.$('diff-medium').onclick = function(){GameEngine.start(GameEngine.pendingMode,'medium');};
+    UI.$('diff-hard').onclick = function(){GameEngine.start(GameEngine.pendingMode,'hard');};
+    UI.$('btn-back-mode').onclick = function(){UI.show('home');};
+    // Results
+    UI.$('btn-results-retry').onclick = function(){GameEngine.start(GameEngine.mode, GameEngine.difficulty);};
+    UI.$('btn-results-home').onclick = function(){UI.show('home');};
+    // Back buttons
+    UI.$('btn-back-stats').onclick = function(){UI.show('home');};
+    UI.$('btn-back-achievements').onclick = function(){UI.show('home');};
+    UI.$('btn-back-settings').onclick = function(){UI.show('home');};
+    // Settings
+    UI.$('setting-q-minus').onclick = function() {
+      if (data.settings.questionsPerRound > 5) { data.settings.questionsPerRound -= 5; Storage.save(data); UI.render_settings(); }
+    };
+    UI.$('setting-q-plus').onclick = function() {
+      if (data.settings.questionsPerRound < 30) { data.settings.questionsPerRound += 5; Storage.save(data); UI.render_settings(); }
+    };
+    UI.$('setting-timer-toggle').onclick = function() {
+      data.settings.showTimer = !data.settings.showTimer; Storage.save(data); UI.render_settings();
+    };
+    UI.$('btn-reset').onclick = function() {
+      if (confirm('Alle Daten l\u00f6schen?')) { Storage.reset(); data = Storage._default(); UI.show('welcome'); }
+    };
+    // Level up overlay
+    UI.$('levelup-btn').onclick = function() { UI.$('level-up-overlay').classList.add('hidden'); };
+  }
+};
+
+document.addEventListener('DOMContentLoaded', function() { App.init(); });
+</script>
+</body>
+</html>
